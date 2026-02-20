@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentriHawk Access Terminal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="data.js"></script>
+</head>
+<body>
+
+    <section id="login-view" class="view-active fullscreen-flex login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1>SENTRI<span style="color:#EA580C">HAWK</span></h1>
+            </div>
+            
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="input-group">
+                    <label>OPERATOR ID</label>
+                    <input type="text" id="username" placeholder="Enter OperatorID" required>
+                </div>
+                <div class="input-group">
+                    <label>AUTHORIZATION KEY</label>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-primary">AUTHENTICATE</button>
+            </form>
+            
+            <div class="system-status">
+                <span class="dot safe"></span> SYSTEM ONLINE AND SECURED
+            </div>
+        </div>
+
+        <div class="login-footer">
+            <p>⚠ RESTRICTED ACCESS TERMINAL. UNAUTHORIZED USE IS STRICTLY PROHIBITED.</p>
+            <p>&copy; 2026 SentriHawk Surveillance Systems. All actions are logged and actively monitored.</p>
+        </div>
+    </section>
+
+    <section id="app-view" class="view-hidden app-layout">
+        
+        <aside class="sidebar">
+            <div class="brand-area">
+                <h2>SentriHawk</h2>
+                <span class="badge" id="role-badge">Role</span>
+            </div>
+            
+            <div class="user-info">
+                <div class="avatar">👤</div>
+                <div class="details">
+                    <h3 id="display-name">User Name</h3>
+                    <p id="display-building">Building</p>
+                </div>
+            </div>
+
+            <nav id="nav-guard" class="hidden">
+                <a href="#" class="nav-item active" onclick="switchGuardView('guard-dashboard')">Overview</a>
+                <a href="#" class="nav-item" onclick="switchGuardView('guard-registration')">Register visitor</a>
+                <a href="#" class="nav-item" onclick="logout()">Sign out</a>
+            </nav>
+
+            <nav id="nav-tenant" class="hidden">
+                <a href="#" class="nav-item active">Dashboard</a>
+                <a href="#" class="nav-item">History</a>
+                <a href="#" class="nav-item" onclick="logout()">Sign out</a>
+            </nav>
+        </aside>
+
+        <main class="content-area">
+            
+            <div id="guard-dashboard" class="sub-view view-active">
+                <header class="page-header">
+                    <h2>Terminal Overview</h2>
+                    <button class="btn-primary" onclick="switchGuardView('guard-registration')">+ New registration</button>
+                </header>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <p class="stat-label">Expected arrivals</p>
+                        <h3 class="stat-value">14</h3>
+                    </div>
+                    <div class="stat-card">
+                        <p class="stat-label">Currently on site</p>
+                        <h3 class="stat-value">42</h3>
+                    </div>
+                    <div class="stat-card">
+                        <p class="stat-label">Security incidents</p>
+                        <h3 class="stat-value text-danger">0</h3>
+                    </div>
+                </div>
+
+                <div class="card data-table-card">
+                    <h3>Incoming visitors</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Destination</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="guard-overview-table">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="guard-registration" class="sub-view view-hidden">
+                <header class="page-header">
+                    <h2>Visitor registration</h2>
+                    <button class="btn-secondary" onclick="switchGuardView('guard-dashboard')">← Back to overview</button>
+                </header>
+                
+                <div id="silent-alarm-banner" class="alert-danger hidden">
+                    ⚠ RESTRICTED ENTITY DETECTED. DO NOT PROCEED.
+                </div>
+
+                <div class="registration-layout">
+                    <div class="card scan-card" onclick="simulateScan()">
+                        <div class="scan-box">
+                            <span style="font-size: 3rem;">📄</span>
+                            <p id="scan-text">Click to scan ID / Passport</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card form-card">
+                        <h3>Identity details</h3>
+                        <form onsubmit="verifyVisitor(event)">
+                            <div class="input-group">
+                                <label>Full name</label>
+                                <input type="text" id="v-name" required>
+                            </div>
+                            <div class="input-group">
+                                <label>Document ID</label>
+                                <input type="text" id="v-id">
+                            </div>
+                            <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1rem;">VERIFY & ADMIT</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tenant-dashboard" class="sub-view view-hidden">
+                <header class="page-header">
+                    <h2>Home</h2>
+                    <button class="btn-primary" onclick="openGhostModal()">Generate VIP pass</button>
+                </header>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <p class="stat-label">Your visitors today</p>
+                        <h3 class="stat-value">3</h3>
+                    </div>
+                    <div class="stat-card">
+                        <p class="stat-label">Pending arrivals</p>
+                        <h3 class="stat-value">1</h3>
+                    </div>
+                </div>
+
+                <div class="card data-table-card">
+                    <h3>Recent activity</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Visitor</th>
+                                <th>Clearance</th>
+                                <th>Time logged</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tenant-table-body">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </section>
+    <div id="visitor-profile-modal" class="modal hidden">
+        <div class="modal-content card">
+            <span class="close" onclick="closeVisitorProfile()">&times;</span>
+            <h2 style="color: var(--primary-bg); border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">Identity Profile</h2>
+            
+            <div class="profile-details" style="margin: 1.5rem 0; line-height: 2;">
+                <p><span class="stat-label">FULL NAME:</span> <strong id="vp-name" style="font-size: 1.1rem;"></strong></p>
+                <p><span class="stat-label">DOCUMENT ID:</span> <span id="vp-id"></span></p>
+                <p><span class="stat-label">CONTACT:</span> <span id="vp-phone"></span></p>
+                <p><span class="stat-label">ORGANIZATION:</span> <span id="vp-company"></span></p>
+                <p><span class="stat-label">CURRENT STATUS:</span> <span id="vp-status" class="status-tag"></span></p>
+            </div>
+            
+            <button id="btn-mark-arrived" class="btn-primary" style="width: 100%;" onclick="markVisitorArrived()">REGISTER ARRIVAL (ON SITE)</button>
+        </div>
+    </div>
+    <div id="ghost-modal" class="modal hidden">
+        <div class="modal-content card">
+            <span class="close" onclick="closeGhostModal()">&times;</span>
+            <h2>Ghost protocol</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Generate an untraceable VIP access token.</p>
+            <div class="input-group">
+                <label>Internal reference name</label>
+                <input type="text" id="ghost-name">
+            </div>
+            <button class="btn-primary" style="width: 100%;" onclick="generateGhostQR()">Generate token</button>
+            <div id="qrcode" style="margin-top: 1.5rem; display: flex; justify-content: center;"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
