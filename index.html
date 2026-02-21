@@ -57,8 +57,12 @@
             </div>
 
             <nav id="nav-guard" class="hidden">
-                <a href="#" class="nav-item active" onclick="switchGuardView('guard-dashboard')">Overview</a>
-                <a href="#" class="nav-item" onclick="switchGuardView('guard-registration')">Register visitor</a>
+                <a href="#" class="nav-item active" onclick="switchGuardView('guard-dashboard', this)">Overview</a>
+                <a href="#" class="nav-item" onclick="switchGuardView('guard-registration', this)">Register visitor</a>
+                <a href="#" class="nav-item" onclick="switchGuardView('guard-history', this)">History</a>
+                <a href="#" class="nav-item" onclick="switchGuardView('guard-deliveries', this)">Deliveries</a>
+                <a href="#" class="nav-item" onclick="switchGuardView('guard-communicate', this)">Communicate</a>
+                <a href="#" class="nav-item" onclick="switchGuardView('guard-settings', this)">Settings</a>
                 <a href="#" class="nav-item" onclick="logout()">Sign out</a>
             </nav>
 
@@ -78,32 +82,35 @@
                 </header>
 
                 <div class="stats-grid">
-                    <div class="stat-card">
+                    <div class="stat-card" style="cursor: pointer;" onclick="setDashboardFilter('EXPECTED')">
                         <p class="stat-label">Expected arrivals</p>
-                        <h3 class="stat-value">14</h3>
+                        <h3 class="stat-value" id="stat-expected">0</h3> 
                     </div>
-                    <div class="stat-card">
-                        <p class="stat-label">Currently on site</p>
-                        <h3 class="stat-value">42</h3>
+                    <div class="stat-card" style="cursor: pointer;" onclick="setDashboardFilter('ON_SITE')">
+                         <p class="stat-label">Currently on site</p>
+                         <h3 class="stat-value" id="stat-onsite">0</h3> 
                     </div>
-                    <div class="stat-card">
-                        <p class="stat-label">Security incidents</p>
-                        <h3 class="stat-value text-danger">0</h3>
+                    <div class="stat-card" style="cursor: pointer;" onclick="setDashboardFilter('INCIDENTS')">
+                         <p class="stat-label">Security incidents</p>
+                         <h3 class="stat-value text-danger" id="stat-incidents">0</h3> 
                     </div>
                 </div>
 
                 <div class="card data-table-card">
-                    <h3>Incoming visitors</h3>
+                    <h3 id="guard-table-title" style="display: inline-block;">Recent Activity</h3>
+                    <span onclick="setDashboardFilter('ALL')" style="float: right; color: var(--primary-action); font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-top: 5px;">View All Activity</span>
                     <table>
                         <thead>
                             <tr>
                                 <th>Name</th>
                                 <th>Destination</th>
                                 <th>Status</th>
+                                <th>Time In</th>
+                                <th>Time Out</th>
                             </tr>
                         </thead>
                         <tbody id="guard-overview-table">
-                            </tbody>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -118,29 +125,82 @@
                     ⚠ RESTRICTED ENTITY DETECTED. DO NOT PROCEED.
                 </div>
 
-                <div class="registration-layout">
-                    <div class="card scan-card" onclick="simulateScan()">
+                <div id="reg-scan-mode" class="registration-mode">
+                    <div class="card scan-card-large" onclick="simulateScan()">
                         <div class="scan-box">
-                            <span style="font-size: 3rem;">📄</span>
+                            <span style="font-size: 5rem;">📄</span>
                             <p id="scan-text">Click to scan ID / Passport</p>
                         </div>
                     </div>
-                    
-                    <div class="card form-card">
-                        <h3>Identity details</h3>
+                    <button class="btn-secondary" style="width: 100%; margin-top: 1rem; padding: 1rem; font-size: 1.1rem;" onclick="toggleRegMode('manual')">Switch to Manual Entry</button>
+                </div>
+
+                <div id="reg-manual-mode" class="registration-mode hidden">
+                    <div class="card form-card-large">
+                        <h3 style="border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px;">Manual Identity Entry</h3>
                         <form onsubmit="verifyVisitor(event)">
                             <div class="input-group">
-                                <label>Full name</label>
+                                <label>Full name<span style="color: var(--danger);"> *</span></label>
                                 <input type="text" id="v-name" required>
                             </div>
                             <div class="input-group">
-                                <label>Document ID</label>
-                                <input type="text" id="v-id">
+                                <label>ID number <span style="color: var(--danger);"> *</span></label>
+                                <input type="text" id="v-id" required>
                             </div>
-                            <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1rem;">VERIFY & ADMIT</button>
+                            <div class="input-group">
+                                <label>Contact (Phone / Email)<span style="color: var(--danger);"> *</span></label>
+                                <input type="text" id="v-contact" required>
+                            </div>
+                            <div class="input-group">
+                                <label>Organization / Company</label>
+                                <input type="text" id="v-org">
+                            </div>
+                             <div class="input-group">
+                                <label>Vehicle Registration Number</label>
+                                <input type="text" id="v-vehicle">
+                            </div>
+                            <div class="input-group">
+                                <label>Destination <span style="color: var(--danger);"> *</span></label>
+                                <div id="destination-selector" class="destination-box" onclick="openTenantGrid()">
+                                    <span id="destination-text">+ Select Destination Tenant</span>
+                                </div>
+                                <input type="hidden" id="v-destination" value="" required>
+                            </div>
+                            
+                            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                                <button type="button" id="btn-back-to-scan" class="btn-alt" style="flex: 1; margin-top: 0;" onclick="toggleRegMode('scan')">← Back to Scan</button>
+                                <button type="submit" class="btn-primary" style="flex: 1; margin-top: 0;">VERIFY & ADMIT</button>
+                            </div>
                         </form>
                     </div>
                 </div>
+            </div>
+            <div id="guard-history" class="sub-view view-hidden">
+                <header class="page-header">
+                    <h2>Terminal History</h2>
+                </header>
+                <div class="card"><p>History logs will appear here.</p></div>
+            </div>
+
+            <div id="guard-deliveries" class="sub-view view-hidden">
+                <header class="page-header">
+                    <h2>Deliveries & Logistics</h2>
+                </header>
+                <div class="card"><p>Active and pending deliveries will appear here.</p></div>
+            </div>
+
+            <div id="guard-communicate" class="sub-view view-hidden">
+                <header class="page-header">
+                    <h2>Communicate</h2>
+                </header>
+                <div class="card"><p>Tenant directory and intercom systems will load here.</p></div>
+            </div>
+
+            <div id="guard-settings" class="sub-view view-hidden">
+                <header class="page-header">
+                    <h2>Terminal Settings</h2>
+                </header>
+                <div class="card"><p>Hardware and user preferences go here.</p></div>
             </div>
 
             <div id="tenant-dashboard" class="sub-view view-hidden">
@@ -148,32 +208,6 @@
                     <h2>Home</h2>
                     <button class="btn-primary" onclick="openGhostModal()">Generate VIP pass</button>
                 </header>
-
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <p class="stat-label">Your visitors today</p>
-                        <h3 class="stat-value">3</h3>
-                    </div>
-                    <div class="stat-card">
-                        <p class="stat-label">Pending arrivals</p>
-                        <h3 class="stat-value">1</h3>
-                    </div>
-                </div>
-
-                <div class="card data-table-card">
-                    <h3>Recent activity</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Visitor</th>
-                                <th>Clearance</th>
-                                <th>Time logged</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tenant-table-body">
-                            </tbody>
-                    </table>
-                </div>
             </div>
 
         </main>
@@ -185,13 +219,14 @@
             
             <div class="profile-details" style="margin: 1.5rem 0; line-height: 2;">
                 <p><span class="stat-label">FULL NAME:</span> <strong id="vp-name" style="font-size: 1.1rem;"></strong></p>
-                <p><span class="stat-label">DOCUMENT ID:</span> <span id="vp-id"></span></p>
+                <p><span class="stat-label">ID NUMBER:</span> <span id="vp-id"></span></p>
                 <p><span class="stat-label">CONTACT:</span> <span id="vp-phone"></span></p>
                 <p><span class="stat-label">ORGANIZATION:</span> <span id="vp-company"></span></p>
                 <p><span class="stat-label">CURRENT STATUS:</span> <span id="vp-status" class="status-tag"></span></p>
             </div>
             
-            <button id="btn-mark-arrived" class="btn-primary" style="width: 100%;" onclick="markVisitorArrived()">REGISTER ARRIVAL (ON SITE)</button>
+            <button id="btn-mark-arrived" class="btn-primary" style="width: 100%; display: none;" onclick="markVisitorArrived()">REGISTER ARRIVAL (ON SITE)</button>
+            <button id="btn-sign-out" class="btn-primary" style="width: 100%; display: none; background: var(--text-muted);" onclick="signVisitorOut()">SIGN OUT VISITOR</button>        
         </div>
     </div>
     <div id="ghost-modal" class="modal hidden">
@@ -207,6 +242,15 @@
             <div id="qrcode" style="margin-top: 1.5rem; display: flex; justify-content: center;"></div>
         </div>
     </div>
+    <div id="tenant-directory-modal" class="modal hidden backdrop-blur">
+        <div class="modal-content tenant-modal card">
+            <span class="close" onclick="closeTenantGrid()">&times;</span>
+            <h2 style="color: var(--primary-bg); border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px;">Select Destination</h2>
+            <div id="tenant-grid" class="tenant-grid">
+                </div>
+        </div>
+    </div>
+
 
     <script src="app.js"></script>
 </body>

@@ -72,10 +72,7 @@ function triggerLoginError() {
 }
 
 function logout() { 
-    // Securely wipe the session token
     sessionStorage.removeItem('sentrihawk_session');
-    // Wipe mock database state if you want a clean slate (Optional)
-    // localStorage.removeItem('sentrihawk_visitors');
     location.reload(); 
 }
 
@@ -96,85 +93,205 @@ function routeUser() {
 }
 
 // Guard Sub-navigation
-function switchGuardView(viewId) {
-    document.getElementById('guard-dashboard').classList.add('view-hidden');
-    document.getElementById('guard-dashboard').classList.remove('view-active');
-    
-    document.getElementById('guard-registration').classList.add('view-hidden');
-    document.getElementById('guard-registration').classList.remove('view-active');
-
-    document.getElementById(viewId).classList.remove('view-hidden');
-    document.getElementById(viewId).classList.add('view-active');
-}
-
-// 3. DASHBOARD POPULATION
-function populateGuardDashboard() {
-    const tbody = document.getElementById('guard-overview-table');
-    tbody.innerHTML = ''; // Clear existing
-    
-    const visitors = getVisitors(); // Fetch from localStorage
-    
-    // Only show the last 5 visitors to keep the guard's view clean
-    const recentVisitors = visitors.slice(-5).reverse(); 
-
-    recentVisitors.forEach(v => {
-        // We reuse the styling logic
-        const statusClass = v.isBlacklisted ? 'status-flagged' : 'status-cleared';
-        const statusText = v.isBlacklisted ? 'RESTRICTED' : 'CLEARED';
+function switchGuardView(viewId, navElement = null) {
+    // 1. Move the Orange Active Accent
+    if (navElement) {
+        // Find all links inside the guard nav and remove the active class
+        const navItems = document.querySelectorAll('#nav-guard .nav-item');
+        navItems.forEach(item => item.classList.remove('active'));
         
-        tbody.innerHTML += `
-            <tr>
-                <td><strong>${v.name}</strong></td>
-                <td>${v.company}</td>
-                <td><span class="status-tag ${statusClass}">${statusText}</span></td>
-            </tr>
-        `;
+        // Add the active class to the link that was just clicked
+        navElement.classList.add('active');
+    }
+
+    // 2. Hide all guard views
+    const allGuardViews = [
+        'guard-dashboard', 'guard-registration', 
+        'guard-history', 'guard-deliveries', 
+        'guard-communicate', 'guard-settings'
+    ];
+    
+    allGuardViews.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.add('view-hidden');
+            el.classList.remove('view-active');
+        }
     });
+
+    // 3. Show the requested view
+    const targetView = document.getElementById(viewId);
+    if (targetView) {
+        targetView.classList.remove('view-hidden');
+        targetView.classList.add('view-active');
+    }
+
+    // Run specific setup scripts if needed
+    if (viewId === 'guard-registration') {
+        setupRegistrationView();
+    }
 }
 
-// === GLOBAL VARIABLE FOR ACTIVE PROFILE ===
 let activeVisitorId = null;
+let currentDashboardFilter = 'ALL';
 
-// === 3. DASHBOARD POPULATION (Updated for interactivity) ===
+function setDashboardFilter(filter) {
+    currentDashboardFilter = filter;
+    const titleEl = document.getElementById('guard-table-title');
+    
+    // Dynamically change the table title based on the click
+    if (filter === 'EXPECTED') titleEl.innerText = 'Expected Arrivals';
+    else if (filter === 'ON_SITE') titleEl.innerText = 'Currently On Site';
+    else if (filter === 'INCIDENTS') titleEl.innerText = 'Flagged Entities';
+    else titleEl.innerText = 'Recent Activity';
+    
+    populateGuardDashboard(); // Redraw the table with the new filter
+}
+
+// === 3. DASHBOARD POPULATION (Dynamic & Interactive) ===
 function populateGuardDashboard() {
     const tbody = document.getElementById('guard-overview-table');
     tbody.innerHTML = ''; 
     
-    const visitors = getVisitors(); // Fetches from localStorage
-    const recentVisitors = visitors.slice(-8).reverse(); // Show last 8
+    const visitors = getVisitors(); 
+    
+    // --- 1. THE MATH ENGINE ---
+    let expectedCount = 0;
+    let onSiteCount = 0;
+    let incidentCount = 0;
 
-    recentVisitors.forEach(v => {
-        // Default status logic if not set
+    visitors.forEach(v => {
+        const currentStatus = v.status || (v.isBlacklisted ? 'FLAGGED' : 'EXPECTED');
+        if (currentStatus === 'EXPECTED') expectedCount++;
+        if (currentStatus === 'ON SITE') onSiteCount++;
+        if (v.isBlacklisted) incidentCount++;
+    });
+
+    document.getElementById('stat-expected').innerText = expectedCount;
+    document.getElementById('stat-onsite').innerText = onSiteCount;
+    document.getElementById('stat-incidents').innerText = incidentCount;
+
+    // --- 2. FILTER & DRAW THE TABLE ---
+    let displayVisitors = visitors.slice().reverse(); // Show newest first
+    
+    // Apply the active filter
+    if (currentDashboardFilter === 'EXPECTED') {
+        displayVisitors = displayVisitors.filter(v => (v.status || (v.isBlacklisted ? 'FLAGGED' : 'EXPECTED')) === 'EXPECTED');
+    } else if (currentDashboardFilter === 'ON_SITE') {
+        displayVisitors = displayVisitors.filter(v => v.status === 'ON SITE');
+    } else if (currentDashboardFilter === 'INCIDENTS') {
+        displayVisitors = displayVisitors.filter(v => v.isBlacklisted);
+    } else {
+        displayVisitors = displayVisitors.slice(0, 8); // ALL Activity: Just show last 8
+    }
+
+    displayVisitors.forEach(v => {
         const currentStatus = v.status || (v.isBlacklisted ? 'FLAGGED' : 'EXPECTED');
         
-        // Dynamic styling based on status
-        let statusClass = 'status-cleared'; // Default Green
-        if (currentStatus === 'FLAGGED') statusClass = 'status-flagged'; // Red
-        if (currentStatus === 'ON SITE') statusClass = 'status-active'; // We'll add a blue tag for this
+        let statusClass = 'status-cleared'; 
+        if (currentStatus === 'FLAGGED') statusClass = 'status-flagged'; 
+        if (currentStatus === 'ON SITE') statusClass = 'status-active'; 
+        if (currentStatus === 'CHECKED OUT') statusClass = 'status-cleared'; 
 
-        // Notice the onclick event passing the visitor's unique ID
+        const displayName = v.isGhost ? "VIP GUEST" : v.name;
+        
+        // Time logic: Show dash if no time is recorded yet
+        const timeIn = v.time_in ? v.time_in : '-';
+        const timeOut = v.time_out ? v.time_out : '-';
+
         tbody.innerHTML += `
             <tr onclick="openVisitorProfile('${v.id}')">
-                <td><strong>${v.name}</strong></td>
-                <td>${v.company}</td>
-                <td><span class="status-tag ${statusClass}">${currentStatus}</span></td>
+                <td><strong>${displayName}</strong></td>
+                <td>${v.destination || 'Unknown'}</td> <td><span class="status-tag ${statusClass}">${currentStatus}</span></td>
+                <td>${timeIn}</td>
+                <td>${timeOut}</td>
             </tr>
         `;
     });
 }
+// === Tier-Based Feature Locking ===
+function setupRegistrationView() {
+    // Look at the building data saved during login
+    const tier = state.building.tier || 1; 
 
-// === NEW: VISITOR PROFILE LOGIC ===
+    if (tier === 1) {
+        // Tier 1: Force manual mode, hide the "Back to Scan" button completely
+        toggleRegMode('manual');
+        document.getElementById('btn-back-to-scan').style.display = 'none'; 
+    } else {
+        // Tier 2 & 3: Allow scanning, show the back button
+        toggleRegMode('scan');
+        document.getElementById('btn-back-to-scan').style.display = 'block';
+    }
+}
+
+function toggleRegMode(mode) {
+    if (mode === 'scan') {
+        document.getElementById('reg-scan-mode').classList.remove('hidden');
+        document.getElementById('reg-manual-mode').classList.add('hidden');
+    } else {
+        document.getElementById('reg-scan-mode').classList.add('hidden');
+        document.getElementById('reg-manual-mode').classList.remove('hidden');
+    }
+}
+
+// === TENANT DIRECTORY LOGIC ===
+function openTenantGrid() {
+    const grid = document.getElementById('tenant-grid');
+    grid.innerHTML = ''; 
+    
+    // Draw the 13 obsidian boxes (relies on 'tenants' array from data.js)
+    tenants.forEach(t => {
+        grid.innerHTML += `
+            <div class="tenant-card" onclick="selectTenant('${t.name}', this)">
+                <div class="tenant-logo">${t.logo}</div>
+                <div class="tenant-name">${t.name}</div>
+            </div>
+        `;
+    });
+    
+    document.getElementById('tenant-directory-modal').classList.remove('hidden');
+}
+
+function closeTenantGrid() {
+    document.getElementById('tenant-directory-modal').classList.add('hidden');
+}
+
+function selectTenant(tenantName, element) {
+    // 1. Flash the box orange
+    element.classList.add('selected-flash');
+    
+    // 2. Wait 250ms for the visual effect, then execute
+    setTimeout(() => {
+        closeTenantGrid();
+        
+        // 3. Update the UI on the form to show the selection
+        const destBox = document.getElementById('destination-selector');
+        const destText = document.getElementById('destination-text');
+        const destInput = document.getElementById('v-destination');
+        
+        if (destInput) destInput.value = tenantName; 
+        if (destText) destText.innerText = tenantName; 
+        if (destBox) destBox.classList.add('has-selection'); 
+        
+    }, 250);
+}
+
+// === VISITOR PROFILE LOGIC ===
+
+function closeVisitorProfile() {
+    document.getElementById('visitor-profile-modal').classList.add('hidden');
+    activeVisitorId = null;
+}
 
 function openVisitorProfile(id) {
     const visitors = getVisitors();
     const visitor = visitors.find(v => v.id === id);
     if (!visitor) return;
 
-    activeVisitorId = id; // Store ID globally for the update function
+    activeVisitorId = id; 
 
-    // Populate modal fields
     document.getElementById('vp-name').innerText = visitor.name;
-    // Add mock fallbacks for data we might not have captured yet
     document.getElementById('vp-id').innerText = visitor.document_id || `ID-${Math.floor(Math.random() * 90000) + 10000}`;
     document.getElementById('vp-phone').innerText = visitor.phone || `+1 555 ${Math.floor(Math.random() * 9000) + 1000}`;
     document.getElementById('vp-company').innerText = visitor.company;
@@ -183,47 +300,58 @@ function openVisitorProfile(id) {
     const currentStatus = visitor.status || (visitor.isBlacklisted ? 'FLAGGED' : 'EXPECTED');
     statusEl.innerText = currentStatus;
 
-    // Button Logic: Hide the "Arrived" button if they are already on site or flagged
-    const btn = document.getElementById('btn-mark-arrived');
-    if (currentStatus === 'ON SITE' || visitor.isBlacklisted) {
-        btn.style.display = 'none';
-    } else {
-        btn.style.display = 'block';
+    // Smart Button Logic
+    const btnArrived = document.getElementById('btn-mark-arrived');
+    const btnSignOut = document.getElementById('btn-sign-out');
+    
+    btnArrived.style.display = 'none';
+    btnSignOut.style.display = 'none';
+
+    if (currentStatus === 'EXPECTED' && !visitor.isBlacklisted) {
+        btnArrived.style.display = 'block'; // Show Arrival button
+    } else if (currentStatus === 'ON SITE') {
+        btnSignOut.style.display = 'block'; // Show Sign Out button
     }
 
-    // Show modal
     document.getElementById('visitor-profile-modal').classList.remove('hidden');
-}
-
-function closeVisitorProfile() {
-    document.getElementById('visitor-profile-modal').classList.add('hidden');
-    activeVisitorId = null;
 }
 
 function markVisitorArrived() {
     if (!activeVisitorId) return;
 
-    // 1. Fetch current database
     let visitors = getVisitors();
-    
-    // 2. Find and update the specific visitor
     const visitorIndex = visitors.findIndex(v => v.id === activeVisitorId);
+    
     if (visitorIndex !== -1) {
         visitors[visitorIndex].status = 'ON SITE';
-        visitors[visitorIndex].last_seen = new Date().toLocaleString(); // Update timestamp
+        // Auto-stamp Time In
+        visitors[visitorIndex].time_in = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); 
+        visitors[visitorIndex].last_seen = new Date().toLocaleString(); 
         
-        // 3. Save back to localStorage
-        localStorage.setItem('sentrihawk_visitors', JSON.stringify(visitors));
+        sessionStorage.setItem('sentrihawk_visitors', JSON.stringify(visitors));
     }
 
-    // 4. Close modal and re-render the UI
     closeVisitorProfile();
-    populateGuardDashboard(); // Updates the Guard table instantly
+    populateGuardDashboard(); 
+}
+
+// NEW: Sign Out function
+function signVisitorOut() {
+    if (!activeVisitorId) return;
+
+    let visitors = getVisitors();
+    const visitorIndex = visitors.findIndex(v => v.id === activeVisitorId);
     
-    // If the Tenant portal is open in another tab/view, this ensures it gets updated
-    if (document.getElementById('tenant-dashboard').classList.contains('view-active')) {
-        populateTenantDashboard();
+    if (visitorIndex !== -1) {
+        visitors[visitorIndex].status = 'CHECKED OUT';
+        // Auto-stamp Time Out
+        visitors[visitorIndex].time_out = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); 
+        
+        sessionStorage.setItem('sentrihawk_visitors', JSON.stringify(visitors));
     }
+
+    closeVisitorProfile();
+    populateGuardDashboard(); 
 }
 
 // 4. GUARD ACTIONS (Scanning & Silent Alarm)
@@ -238,42 +366,54 @@ function simulateScan() {
     }, 1200);
 }
 
+// === 4. GUARD ACTIONS (Registration) ===
 function verifyVisitor(e) {
     e.preventDefault();
     
-    // Get the raw input
     const rawName = document.getElementById('v-name').value;
+    const docId = document.getElementById('v-id').value;
+    const contact = document.getElementById('v-contact').value;
+    const org = document.getElementById('v-org').value || "Walk-in Visitor";
+    const dest = document.getElementById('v-destination').value; // Extracted correctly
+    
     const searchName = rawName.toLowerCase();
     
-    // 1. Check ACL (Access Control List) for Blacklist
     if (searchName.includes("bad") || searchName.includes("restricted")) {
+        // Assume you have triggerSilentAlarm() defined somewhere in app.js
         triggerSilentAlarm();
-        return; // Stop execution, do not save to database
+        return; 
     } 
     
-    // 2. SAVE TO DATABASE 
-    // We call addVisitor from data.js, which saves to localStorage
-    const newVisitor = addVisitor({
+    addVisitor({
         name: rawName,
-        company: "Walk-in Visitor", // Defaulting for prototype
+        document_id: docId,
+        phone: contact,
+        company: org,
+        destination: dest,
         isBlacklisted: false,
-        isGhost: false
+        isGhost: false,
+        status: 'ON SITE',
+        time_in: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
     });
-
-    console.log("New Visitor Saved:", newVisitor);
     
-    // 3. UI Feedback & Routing
     alert(`Access Granted. ${rawName} has been securely logged.`);
     
-    // Clear form
+    // Clear form inputs
     document.getElementById('v-name').value = '';
     document.getElementById('v-id').value = '';
+    document.getElementById('v-contact').value = '';
+    document.getElementById('v-org').value = '';
     
-    // Send guard back to the overview dashboard
+    // Reset destination UI specifically
+    document.getElementById('v-destination').value = '';
+    const destText = document.getElementById('destination-text');
+    const destBox = document.getElementById('destination-selector');
+    
+    if (destText) destText.innerText = '+ Select Destination Tenant';
+    if (destBox) destBox.classList.remove('has-selection');
+    
     switchGuardView('guard-dashboard'); 
-    
-    // Refresh the guard's table so they see the person they just admitted!
-    populateGuardDashboard();
+    populateGuardDashboard(); 
 }
 
 // 5. TENANT ACTIONS (Ghost Protocol)
@@ -286,7 +426,31 @@ function closeGhostModal() {
 
 function generateGhostQR() {
     const name = document.getElementById('ghost-name').value;
-    if(!name) return;
+    if(!name) return alert("Please enter a name.");
+
+    // 1. Generate Token
+    const token = `SH_GHOST_${Date.now()}`;
     document.getElementById('qrcode').innerHTML = "";
-    new QRCode(document.getElementById("qrcode"), { text: `SH_GHOST_${Date.now()}`, width: 160, height: 160 });
+    new QRCode(document.getElementById("qrcode"), { text: token, width: 160, height: 160 });
+
+    // 2. Save Ghost to Database so the Guard can see them
+    addVisitor({
+        name: "VIP GUEST", 
+        real_name: name,   
+        company: "Confidential",
+        type: "vip",
+        isGhost: true,
+        status: 'EXPECTED' 
+    });
+
+    // 3. Re-render Tenant Dash to show the new VIP
+    populateTenantDashboard();
+    console.log("Ghost Pass Generated and Logged to Database.");
+}
+
+function triggerSilentAlarm() {
+    document.getElementById('silent-alarm-banner').classList.remove('hidden');
+    setTimeout(() => {
+        document.getElementById('silent-alarm-banner').classList.add('hidden');
+    }, 4000);
 }

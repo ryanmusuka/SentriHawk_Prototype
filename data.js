@@ -68,30 +68,38 @@ const USERS = [
     { username: "hos3", pass: "pass123", role: "hos", tier: 3, buildingId: "bld_3", name: "Security Chief" }
 ];
 
-// --- 4. TENANTS (DESTINATIONS) ---
-const TENANT_DIRECTORY = [
-    { id: "t_01", buildingId: "bld_1", name: "Law Firm A", floor: 3, logo: "⚖️" },
-    { id: "t_02", buildingId: "bld_1", name: "Dr. Green", floor: 5, logo: "⚕️" },
-    { id: "t_03", buildingId: "bld_2", name: "Dev Squad", floor: 12, logo: "💻" },
-    { id: "t_04", buildingId: "bld_2", name: "Marketing G", floor: 8, logo: "🎨" },
-    { id: "t_05", buildingId: "bld_3", name: "R&D Lab", floor: 45, logo: "🧪" },
-    { id: "t_06", buildingId: "bld_3", name: "Server Farm", floor: "B2", logo: "🔒" } // FIXED: Added quotes to B2
+// === TENANT DIRECTORY DATA ===
+const tenants = [
+    { id: 't1', name: 'Nexus Innovations', logo: '🚀' },
+    { id: 't2', name: 'Stark Logistics', logo: '📦' },
+    { id: 't3', name: 'Quantum Financial', logo: '📈' },
+    { id: 't4', name: 'Aegis Security', logo: '🛡️' },
+    { id: 't5', name: 'Vertex Studios', logo: '🎨' },
+    { id: 't6', name: 'Horizon Legal', logo: '⚖️' },
+    { id: 't7', name: 'Omni Health', logo: '🏥' },
+    { id: 't8', name: 'Apex Engineering', logo: '⚙️' },
+    { id: 't9', name: 'Lumina Media', logo: '🎬' },
+    { id: 't10', name: 'Crescent Foods', logo: '🍔' },
+    { id: 't11', name: 'Echo Tech', logo: '💻' },
+    { id: 't12', name: 'Vanguard Partners', logo: '🤝' },
+    { id: 't13', name: 'Nimbus Cloud', logo: '☁️' }
 ];
 
 // --- 5. VISITORS (TEST CASES) ---
 const generateMockVector = () => Array.from({length: 10}, () => Math.random().toFixed(4));
 
-// FIXED: Renamed to DEFAULT_VISITORS to match your function logic below
 const DEFAULT_VISITORS = [
     {
         id: "vis_001",
         name: "John Doe",
         type: "standard",
         company: "Delivery Co",
+        destination: "Stark Logistics", // Added Destination
         isBlacklisted: false,
         isGhost: false,
         face_vector: generateMockVector(),
-        last_seen: "2023-10-24 09:00"
+        last_seen: "2023-10-24 09:00",
+        status: "EXPECTED"
     },
     {
         id: "vis_002",
@@ -99,63 +107,67 @@ const DEFAULT_VISITORS = [
         real_name: "Senator Armstrong",
         type: "vip",
         company: "Government",
+        destination: "Quantum Financial", // Added Destination
         isBlacklisted: false,
         isGhost: true, 
         face_vector: generateMockVector(),
-        last_seen: "2023-10-23 14:00"
+        last_seen: "2023-10-23 14:00",
+        status: "EXPECTED"
     },
     {
         id: "vis_003",
         name: "Lazlo Panaflex",
         type: "restricted",
         company: "Unknown",
+        destination: "Aegis Security", // Added Destination
         isBlacklisted: true, 
         isGhost: false,
         face_vector: generateMockVector(),
-        last_seen: "2023-09-12 18:30"
+        last_seen: "2023-09-12 18:30",
+        status: "FLAGGED"
     }
 ];
 
 // --- 6. LOGIC & HELPERS ---
+const STORAGE_KEY = 'sentrihawk_visitors';
 
-// Initialize Storage
-function initStorage() {
-    if (!localStorage.getItem('sentrihawk_visitors')) {
-        // FIXED: Now correctly references DEFAULT_VISITORS
-        localStorage.setItem('sentrihawk_visitors', JSON.stringify(DEFAULT_VISITORS));
-        console.log("Database Initialized with Default Data");
-    }
-}
-
-// Get All Visitors
 function getVisitors() {
-    const stored = localStorage.getItem('sentrihawk_visitors');
-    return stored ? JSON.parse(stored) : DEFAULT_VISITORS;
+    // 1. Read strictly from sessionStorage
+    const storedData = sessionStorage.getItem(STORAGE_KEY);
+    
+    if (storedData) {
+        return JSON.parse(storedData);
+    }
+    
+    // 2. If empty, seed the demo data into sessionStorage
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_VISITORS));
+    return DEFAULT_VISITORS;
 }
 
-// Add New Visitor
 function addVisitor(visitorData) {
-    const currentVisitors = getVisitors();
+    let visitors = getVisitors();
     
     const newVisitor = {
-        id: `vis_${Date.now()}`,
-        face_vector: generateMockVector(),
-        last_seen: new Date().toLocaleString(),
-        ...visitorData
+        id: 'v' + Date.now(), // Generate a unique ID based on timestamp
+        ...visitorData,
+        last_seen: new Date().toLocaleString()
     };
     
-    currentVisitors.push(newVisitor);
-    localStorage.setItem('sentrihawk_visitors', JSON.stringify(currentVisitors));
+    visitors.push(newVisitor);
+    
+    // 3. Write strictly to sessionStorage
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(visitors));
+    
     return newVisitor;
 }
 
 // Reset Database Helper
 function resetDatabase() {
-    localStorage.removeItem('sentrihawk_visitors');
+    sessionStorage.removeItem(STORAGE_KEY); // Changed from localStorage to sessionStorage
     location.reload();
 }
 
-// ADDED: Authentication Logic (Required for Login Page)
+// Authentication Logic
 function authenticateUser(user, pass) {
     // 1. Find user in USERS array
     const foundUser = USERS.find(u => u.username === user && u.pass === pass);
@@ -174,5 +186,8 @@ function authenticateUser(user, pass) {
     return { success: false, message: "Invalid Credentials" };
 }
 
-// Run initialization
-initStorage();
+// Initialize Storage
+if (!sessionStorage.getItem(STORAGE_KEY)) {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_VISITORS));
+    console.log("Database Initialized with Default Data");
+}

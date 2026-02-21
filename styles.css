@@ -49,7 +49,6 @@ body {
     justify-content: center; /* Centers everything dynamically */
 }
 
-/* 3. Keep the card exactly as it is, just ensure it doesn't squish */
 .login-card { 
     background: var(--bg-card); 
     padding: 3rem; 
@@ -75,7 +74,7 @@ body {
 .input-group { margin-bottom: 1.5rem; width: 100%; }
 .input-group label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; }
 
-/* Updated Input Fields: Obsidian Blue Background */
+/* Input Fields */
 .input-group input { 
     width: 100%; 
     padding: 12px; 
@@ -89,7 +88,7 @@ body {
 
 .input-group input:focus { 
     border-color: var(--primary-action); 
-    box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.2); /* Subtle orange glow on focus */
+    box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.2); 
 }
 
 .input-group input::placeholder { color: #475569; } /* Darker placeholder so it doesn't distract */
@@ -101,11 +100,52 @@ body {
     letter-spacing: 1px;
 }
 .btn-primary:hover { background: var(--primary-hover); }
+/* Obsidian Blue Button for Destination */
+.btn-alt {
+    background: var(--primary-bg); 
+    color: var(--text-light); 
+    border: none; 
+    padding: 20px 24px; 
+    border-radius: 4px; 
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: background 0.2s; 
+    letter-spacing: 1px;
+}
+.btn-alt:hover { 
+    background: var(--text-muted); /* Slightly lighter gray/blue on hover */ 
+}
+
+.btn-secondary {
+    background: #E2E8F0;
+    color: var(--text-main);
+    border: none; 
+    padding: 10px 16px; 
+    border-radius: 4px; 
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: background 0.2s;
+}
+.btn-secondary:hover { 
+    background: #CBD5E1; 
+}
+
+.btn-outline {
+    background: white; 
+    color: var(--primary-bg); 
+    border: 2px solid var(--primary-bg); 
+    padding: 20px 24px; 
+    border-radius: 4px; 
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: background 0.2s; 
+    letter-spacing: 1px;
+}
 
 /* Global Footer Warnings */
 .login-footer {
-    position: relative; /* Removed absolute positioning */
-    margin-top: 3rem; /* Pushes it down safely below the card */
+    position: relative; 
+    margin-top: 3rem; 
     text-align: center;
     color: var(--text-muted);
     font-size: 0.75rem;
@@ -144,8 +184,31 @@ nav { padding: 20px 0; }
 /* CARDS & GRIDS */
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
 .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-.stat-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 24px; border-top: 4px solid var(--primary-bg); }
-.stat-label { color: var(--text-muted); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; margin-bottom: 10px; }
+.stat-card { 
+    background: var(--bg-card); 
+    border: 1px solid var(--border-color); 
+    border-radius: 8px; 
+    padding: 24px; 
+    border-top: 4px solid var(--primary-bg);
+    
+    /* ADDED: Smooth transition properties and pointer cursor */
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+/* Hover State: Darkens slightly to match table rows and pops up */
+.stat-card:hover {
+    background-color: #F1F5F9; /* Matches your Slate 100 table highlight */
+    transform: scale(1.02); /* Subtle pop effect */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); /* Adds a nice lifted shadow */
+}
+
+/* Active State: Pushes down into the page when clicked */
+.stat-card:active {
+    background-color: #E2E8F0; /* Slightly darker slate for the press */
+    transform: scale(0.98); 
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05);
+}.stat-label { color: var(--text-muted); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; margin-bottom: 10px; }
 .stat-value { font-size: 2.5rem; font-weight: 700; color: var(--primary-bg); }
 
 /* TABLES */
@@ -188,3 +251,139 @@ td { padding: 16px 12px; border-bottom: 1px solid var(--border-color); font-size
 .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8); display: flex; align-items: center; justify-content: center; z-index: 100; }
 .modal-content { width: 400px; border-top: 4px solid var(--primary-action); }
 .close { float: right; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); }
+
+/* --- NEW REGISTRATION LAYOUT --- */
+.scan-card-large {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 6rem 2rem; /* Huge padding */
+    cursor: pointer;
+    border: 3px dashed var(--border-color);
+    background-color: var(--secondary-bg);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.scan-card-large:hover {
+    border-color: var(--primary-action);
+    background-color: #f8fafc;
+}
+
+.form-card-large {
+    max-width: 600px;
+    margin: 0 auto;
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+/*  Obsidian Blue Button for Destination */
+.btn-alt {
+    background: var(--primary-bg); 
+    color: var(--text-light); 
+    border: none; 
+    padding: 20px 24px; 
+    border-radius: 4px; 
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: background 0.2s; 
+    letter-spacing: 1px;
+}
+.btn-alt:hover { 
+    background: var(--text-muted); /* Slightly lighter gray/blue on hover */ 
+}
+
+/* FIX: Clean up standard secondary buttons (like Back to Overview) */
+.btn-secondary {
+    background: #E2E8F0;
+    color: var(--text-main);
+    border: none; 
+    padding: 10px 16px; 
+    border-radius: 4px; 
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: background 0.2s;
+}
+.btn-secondary:hover { 
+    background: #CBD5E1; 
+}
+/* === TENANT DIRECTORY MODAL === */
+.backdrop-blur {
+    background-color: rgba(0, 0, 0, 0.7) !important; 
+    backdrop-filter: blur(6px); /* Blurs the app in the background */
+}
+
+.tenant-modal {
+    max-width: 700px;
+    width: 95%;
+}
+
+.tenant-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 15px;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+/* Obsidian Blue Boxes */
+.tenant-card {
+    background-color: #0f172a; 
+    color: #ffffff;
+    border-radius: 8px;
+    padding: 20px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 100px;
+}
+
+.tenant-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+/* The Orange Flash state */
+.tenant-card.selected-flash {
+    background-color: var(--primary-action) !important;
+    transform: scale(0.95);
+}
+
+.tenant-logo { font-size: 2.2rem; }
+.tenant-name { font-size: 0.85rem; font-weight: 600; line-height: 1.2; }
+
+/* Interactive Destination Input Button */
+.destination-box {
+    border: 2px dashed var(--border-color);
+    border-radius: 6px;
+    padding: 16px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--bg-main);
+    transition: all 0.2s ease;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.destination-box:hover {
+    border-color: var(--primary-action);
+    color: var(--primary-action);
+    background: #F8FAFC;
+}
+
+/* State when a tenant is actively selected */
+.destination-box.has-selection {
+    border: 2px solid var(--primary-action);
+    background: #FFF7ED;
+    color: var(--primary-action);
+    font-size: 1.1rem;
+}
