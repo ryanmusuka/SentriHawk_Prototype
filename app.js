@@ -127,8 +127,14 @@ function switchGuardView(viewId, navElement = null) {
     }
 
     // Run specific setup scripts if needed
-    if (viewId === 'guard-registration') {
-        setupRegistrationView();
+    if (viewId === 'guard-registration') setupRegistrationView();
+    if (viewId === 'guard-history') {
+        // If the saved historyDate is older than today's actual date, reset it to today
+        const actualToday = new Date();
+        if (historyDate.toDateString() !== actualToday.toDateString()) {
+            historyDate = actualToday;
+        }
+        updateHistoryUI(); 
     }
 }
 
@@ -195,14 +201,17 @@ function populateGuardDashboard() {
 
         const displayName = v.isGhost ? "VIP GUEST" : v.name;
         
-        // Time logic: Show dash if no time is recorded yet
-        const timeIn = v.time_in ? v.time_in : '-';
-        const timeOut = v.time_out ? v.time_out : '-';
+        // NEW: Read from visits array instead of flat structure
+        const latestVisit = (v.visits && v.visits.length > 0) ? v.visits[v.visits.length - 1] : {};
+        const timeIn = latestVisit.time_in ? latestVisit.time_in : '-';
+        const timeOut = latestVisit.time_out ? latestVisit.time_out : '-';
+        const dest = latestVisit.destination || 'Unknown';
 
         tbody.innerHTML += `
             <tr onclick="openVisitorProfile('${v.id}')">
                 <td><strong>${displayName}</strong></td>
-                <td>${v.destination || 'Unknown'}</td> <td><span class="status-tag ${statusClass}">${currentStatus}</span></td>
+                <td>${dest}</td> 
+                <td><span class="status-tag ${statusClass}">${currentStatus}</span></td>
                 <td>${timeIn}</td>
                 <td>${timeOut}</td>
             </tr>
@@ -324,8 +333,9 @@ function markVisitorArrived() {
     
     if (visitorIndex !== -1) {
         visitors[visitorIndex].status = 'ON SITE';
-        // Auto-stamp Time In
-        visitors[visitorIndex].time_in = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); 
+        // Auto-stamp Time In to the latest visit
+        let latestVisit = visitors[visitorIndex].visits[visitors[visitorIndex].visits.length - 1];
+        if(latestVisit) latestVisit.time_in = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         visitors[visitorIndex].last_seen = new Date().toLocaleString(); 
         
         sessionStorage.setItem('sentrihawk_visitors', JSON.stringify(visitors));
@@ -344,8 +354,9 @@ function signVisitorOut() {
     
     if (visitorIndex !== -1) {
         visitors[visitorIndex].status = 'CHECKED OUT';
-        // Auto-stamp Time Out
-        visitors[visitorIndex].time_out = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); 
+        // Auto-stamp Time Out to the latest visit
+        let latestVisit = visitors[visitorIndex].visits[visitors[visitorIndex].visits.length - 1];
+        if(latestVisit) latestVisit.time_out = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         
         sessionStorage.setItem('sentrihawk_visitors', JSON.stringify(visitors));
     }
@@ -374,27 +385,47 @@ function verifyVisitor(e) {
     const docId = document.getElementById('v-id').value;
     const contact = document.getElementById('v-contact').value;
     const org = document.getElementById('v-org').value || "Walk-in Visitor";
-    const dest = document.getElementById('v-destination').value; // Extracted correctly
+    const dest = document.getElementById('v-destination').value; 
+    
+    // Capture VRN if element exists
+    const vrnElement = document.getElementById('v-vehicle');
+    const vrn = vrnElement ? vrnElement.value : "N/A";
     
     const searchName = rawName.toLowerCase();
     
     if (searchName.includes("bad") || searchName.includes("restricted")) {
-        // Assume you have triggerSilentAlarm() defined somewhere in app.js
         triggerSilentAlarm();
         return; 
     } 
     
-    addVisitor({
-        name: rawName,
-        document_id: docId,
-        phone: contact,
-        company: org,
-        destination: dest,
-        isBlacklisted: false,
-        isGhost: false,
-        status: 'ON SITE',
-        time_in: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-    });
+    let visitors = getVisitors();
+    let todayDate = new Date().toISOString().split('T')[0];
+    let timeString = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+    // Check if person exists to append visit, or create new
+    let existingPersonIndex = visitors.findIndex(v => (v.document_id && v.document_id === docId) || v.name.toLowerCase() === searchName);
+
+    if (existingPersonIndex !== -1) {
+        // Person exists, update status, VRN, and append visit
+        visitors[existingPersonIndex].status = 'ON SITE';
+        visitors[existingPersonIndex].vrn = vrn;
+        if(!visitors[existingPersonIndex].visits) visitors[existingPersonIndex].visits = [];
+        visitors[existingPersonIndex].visits.push({ date: todayDate, time_in: timeString, time_out: null, destination: dest });
+        sessionStorage.setItem('sentrihawk_visitors', JSON.stringify(visitors));
+    } else {
+        // New person
+        addVisitor({
+            name: rawName,
+            document_id: docId,
+            phone: contact,
+            company: org,
+            vrn: vrn,
+            isBlacklisted: false,
+            isGhost: false,
+            status: 'ON SITE',
+            visits: [{ date: todayDate, time_in: timeString, time_out: null, destination: dest }]
+        });
+    }
     
     alert(`Access Granted. ${rawName} has been securely logged.`);
     
@@ -403,9 +434,11 @@ function verifyVisitor(e) {
     document.getElementById('v-id').value = '';
     document.getElementById('v-contact').value = '';
     document.getElementById('v-org').value = '';
+    if (vrnElement) vrnElement.value = '';
     
     // Reset destination UI specifically
-    document.getElementById('v-destination').value = '';
+    const destInput = document.getElementById('v-destination');
+    if(destInput) destInput.value = '';
     const destText = document.getElementById('destination-text');
     const destBox = document.getElementById('destination-selector');
     
@@ -434,17 +467,19 @@ function generateGhostQR() {
     new QRCode(document.getElementById("qrcode"), { text: token, width: 160, height: 160 });
 
     // 2. Save Ghost to Database so the Guard can see them
+    const todayStr = new Date().toISOString().split('T')[0];
     addVisitor({
         name: "VIP GUEST", 
         real_name: name,   
         company: "Confidential",
         type: "vip",
         isGhost: true,
-        status: 'EXPECTED' 
+        status: 'EXPECTED',
+        visits: [{ date: todayStr, time_in: null, time_out: null, destination: "Confidential" }]
     });
 
     // 3. Re-render Tenant Dash to show the new VIP
-    populateTenantDashboard();
+    // populateTenantDashboard(); // Assuming you still have this function defined elsewhere or it's mocked
     console.log("Ghost Pass Generated and Logged to Database.");
 }
 
@@ -453,4 +488,177 @@ function triggerSilentAlarm() {
     setTimeout(() => {
         document.getElementById('silent-alarm-banner').classList.add('hidden');
     }, 4000);
+}
+
+
+// === 6. HISTORY TAB LOGIC ENGINE ===
+let historyDate = new Date(); 
+
+function changeHistoryDate(offset) {
+    historyDate.setDate(historyDate.getDate() + offset);
+    updateHistoryUI();
+}
+
+function updateHistoryUI() {
+    const today = new Date();
+    const displayEl = document.getElementById('history-date-display');
+    
+    if (historyDate.toDateString() === today.toDateString()) {
+        displayEl.innerText = "Today";
+    } else {
+        displayEl.innerText = historyDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    
+    renderHistoryTable();
+}
+
+function renderHistoryTable() {
+    const tbody = document.getElementById('history-table-body');
+    if (!tbody) return; // Fail gracefully if UI isn't loaded yet
+    tbody.innerHTML = '';
+    
+    const searchInput = document.getElementById('history-search');
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+    const targetDate = historyDate.toISOString().split('T')[0];
+    const visitors = getVisitors();
+    
+    let matches = visitors.filter(person => {
+        const matchSearch = person.name.toLowerCase().includes(searchTerm) || 
+                            (person.phone && person.phone.includes(searchTerm)) || 
+                            (person.company && person.company.toLowerCase().includes(searchTerm));
+        const hasVisitOnDate = person.visits && person.visits.some(visit => visit.date === targetDate);
+        return matchSearch && hasVisitOnDate;
+    });
+    
+    if (matches.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 40px;">No records found for this date.</td></tr>`;
+        return;
+    }
+
+    matches.forEach(person => {
+        tbody.innerHTML += `
+            <tr onclick="openHistoryProfile('${person.id}')" style="cursor: pointer;">
+                <td>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div class="avatar-circle">${person.name.charAt(0)}</div>
+                        <strong>${person.name}</strong>
+                    </div>
+                </td>
+                <td>${person.document_id || 'N/A'}</td>
+                <td>${person.company || 'Walk-in'}</td>
+                <td>${targetDate}</td>
+            </tr>
+        `;
+    });
+}
+
+function openHistoryProfile(personId) {
+    const person = getVisitors().find(v => v.id === personId);
+    if (!person) return;
+    
+    document.getElementById('history-main-list').classList.add('hidden');
+    document.getElementById('history-profile-view').classList.remove('hidden');
+    
+    document.getElementById('hp-name').innerText = person.name;
+    document.getElementById('hp-contact').innerText = person.phone || 'N/A';
+    document.getElementById('hp-vrn').innerText = person.vrn || 'N/A';
+    document.getElementById('hp-id').innerText = person.document_id || 'N/A';
+    document.getElementById('hp-org').innerText = person.company || 'N/A';
+    
+    const visitsBody = document.getElementById('hp-visits-body');
+    visitsBody.innerHTML = '';
+    
+    // Display all visits sorted by newest first
+    const sortedVisits = [...(person.visits || [])].reverse();
+    sortedVisits.forEach(visit => {
+        visitsBody.innerHTML += `
+            <tr>
+                <td>${visit.date}</td>
+                <td>${visit.destination || 'Unknown'}</td>
+                <td>${visit.time_in || '-'}</td>
+                <td>${visit.time_out || '-'}</td>
+            </tr>
+        `;
+    });
+}
+
+function closeHistoryProfile() {
+    document.getElementById('history-profile-view').classList.add('hidden');
+    document.getElementById('history-main-list').classList.remove('hidden');
+}
+
+// === CUSTOM CALENDAR ENGINE ===
+let currentCalDate = new Date(); // Tracks the month currently being viewed in the dropdown
+
+function toggleCustomCalendar(e) {
+    if(e) e.stopPropagation(); // Prevents this click from immediately closing the calendar
+    const cal = document.getElementById('custom-calendar-dropdown');
+    
+    cal.classList.toggle('hidden');
+    
+    if (!cal.classList.contains('hidden')) {
+        // When opening, reset the view to whatever date is currently selected in the app
+        currentCalDate = new Date(historyDate); 
+        renderCalendar();
+    }
+}
+
+// THE FIX: Close calendar when clicking anywhere outside of it
+document.addEventListener('click', function(event) {
+    const wrapper = document.getElementById('custom-date-wrapper');
+    const cal = document.getElementById('custom-calendar-dropdown');
+    
+    // If the click happened outside the wrapper, hide the calendar
+    if (wrapper && !wrapper.contains(event.target)) {
+        cal.classList.add('hidden');
+    }
+});
+
+function changeCalendarMonth(offset, e) {
+    if(e) e.stopPropagation(); // Stop click from closing dropdown
+    currentCalDate.setMonth(currentCalDate.getMonth() + offset);
+    renderCalendar();
+}
+
+function renderCalendar() {
+    const monthYear = document.getElementById('calendar-month-year');
+    const grid = document.getElementById('calendar-days-grid');
+    
+    // Update Header
+    monthYear.innerText = currentCalDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    grid.innerHTML = '';
+    
+    const year = currentCalDate.getFullYear();
+    const month = currentCalDate.getMonth();
+    
+    // Figure out starting day and total days
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    // Inject empty slots for days before the 1st
+    for (let i = 0; i < firstDay; i++) {
+        grid.innerHTML += `<div class="calendar-day empty"></div>`;
+    }
+    
+    // Inject actual days
+    for (let d = 1; d <= daysInMonth; d++) {
+        // Check if this day is the currently selected historyDate
+        const isSelected = (d === historyDate.getDate() && month === historyDate.getMonth() && year === historyDate.getFullYear());
+        const selectedClass = isSelected ? 'selected' : '';
+        
+        grid.innerHTML += `<div class="calendar-day ${selectedClass}" onclick="selectCustomDate(${year}, ${month}, ${d}, event)">${d}</div>`;
+    }
+}
+
+function selectCustomDate(year, month, day, e) {
+    if(e) e.stopPropagation();
+    
+    // Set the main app date (Noon prevents weird timezone shifts pushing it a day back)
+    historyDate = new Date(year, month, day, 12, 0, 0); 
+    
+    // Hide the dropdown calendar
+    document.getElementById('custom-calendar-dropdown').classList.add('hidden');
+    
+    // Update the UI using your existing function!
+    updateHistoryUI(); 
 }

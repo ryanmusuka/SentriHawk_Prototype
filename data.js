@@ -87,44 +87,51 @@ const tenants = [
 
 // --- 5. VISITORS (TEST CASES) ---
 const generateMockVector = () => Array.from({length: 10}, () => Math.random().toFixed(4));
+const todayStr = new Date().toISOString().split('T')[0]; // Gets today's date dynamically
 
 const DEFAULT_VISITORS = [
     {
         id: "vis_001",
         name: "John Doe",
-        type: "standard",
+        document_id: "ID-99321",
+        phone: "+1 555 0192",
         company: "Delivery Co",
-        destination: "Stark Logistics", // Added Destination
+        vrn: "ABC-123",
         isBlacklisted: false,
         isGhost: false,
-        face_vector: generateMockVector(),
-        last_seen: "2023-10-24 09:00",
-        status: "EXPECTED"
+        status: "EXPECTED",
+        visits: [
+            { date: todayStr, time_in: null, time_out: null, destination: "Stark Logistics" }
+        ]
     },
     {
         id: "vis_002",
         name: "VIP GUEST", 
         real_name: "Senator Armstrong",
-        type: "vip",
+        document_id: "GOV-001",
+        phone: "Classified",
         company: "Government",
-        destination: "Quantum Financial", // Added Destination
+        vrn: "STATE-1",
         isBlacklisted: false,
         isGhost: true, 
-        face_vector: generateMockVector(),
-        last_seen: "2023-10-23 14:00",
-        status: "EXPECTED"
+        status: "EXPECTED",
+        visits: [
+            { date: todayStr, time_in: null, time_out: null, destination: "Quantum Financial" }
+        ]
     },
     {
         id: "vis_003",
         name: "Lazlo Panaflex",
-        type: "restricted",
+        document_id: "ID-RESTRICTED",
+        phone: "Unknown",
         company: "Unknown",
-        destination: "Aegis Security", // Added Destination
+        vrn: "N/A",
         isBlacklisted: true, 
         isGhost: false,
-        face_vector: generateMockVector(),
-        last_seen: "2023-09-12 18:30",
-        status: "FLAGGED"
+        status: "FLAGGED",
+        visits: [
+            { date: "2026-02-15", time_in: "14:22", time_out: "14:25", destination: "Aegis Security" }
+        ]
     }
 ];
 
@@ -144,13 +151,12 @@ function getVisitors() {
     return DEFAULT_VISITORS;
 }
 
-function addVisitor(visitorData) {
+function addVisitor(personData) {
     let visitors = getVisitors();
     
     const newVisitor = {
         id: 'v' + Date.now(), // Generate a unique ID based on timestamp
-        ...visitorData,
-        last_seen: new Date().toLocaleString()
+        ...personData
     };
     
     visitors.push(newVisitor);
@@ -163,7 +169,7 @@ function addVisitor(visitorData) {
 
 // Reset Database Helper
 function resetDatabase() {
-    sessionStorage.removeItem(STORAGE_KEY); // Changed from localStorage to sessionStorage
+    sessionStorage.removeItem(STORAGE_KEY); 
     location.reload();
 }
 
