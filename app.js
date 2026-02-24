@@ -82,30 +82,73 @@ function logout() {
 // 2. ROUTING & NAVIGATION
 function routeUser() {
     const role = state.user.role;
-    
-    if (role === 'guard') {
-        document.getElementById('nav-guard').classList.remove('hidden');
+    const tier = state.building?.tier || 1; 
 
-        // --- NEW: TIER FEATURE LOCK (DELIVERIES) ---
-        const tier = state.building.tier || 1; 
+    // ==========================================
+    // 1. THE HARD RESET (Fixes State Leakage)
+    // ==========================================
+    // Hide BOTH navbars first
+    const navGuard = document.getElementById('nav-guard');
+    const navTenant = document.getElementById('nav-tenant');
+    if (navGuard) navGuard.classList.add('hidden');
+    if (navTenant) navTenant.classList.add('hidden');
+
+    // Combine all possible view IDs across all roles
+    const allAppViews = [
+        'guard-dashboard', 'guard-registration', 'guard-history', 
+        'guard-deliveries', 'guard-communicate', 
+        'tenant-dashboard', 'tenant-pre-reg', 'tenant-history', 
+        'tenant-employees', 'tenant-communicate', 
+        'settings-view'
+    ];
+    
+    // Force every single view into a hidden state
+    allAppViews.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.add('view-hidden');
+            el.classList.remove('view-active');
+        }
+    });
+
+    // ==========================================
+    // 2. ROLE-BASED ROUTING (Rebuilding the UI)
+    // ==========================================
+    if (role === 'guard') {
+        if (navGuard) navGuard.classList.remove('hidden');
+
+        // --- TIER FEATURE LOCK (GUARD: DELIVERIES) ---
         const deliveryNavBtn = document.getElementById('nav-guard-deliveries'); 
-        
         if (deliveryNavBtn) {
             if (tier === 1) {
-                deliveryNavBtn.style.display = 'none'; // Lock out Tier 1
+                deliveryNavBtn.classList.add('tier-locked');
             } else {
-                deliveryNavBtn.style.display = 'block'; // Allow Tier 2 & 3
+                deliveryNavBtn.classList.remove('tier-locked');
             }
         }
-        // -------------------------------------------
 
         switchGuardView('guard-dashboard');
-        populateGuardDashboard();
+        if (typeof populateGuardDashboard === 'function') populateGuardDashboard();
+
     } else if (role === 'tenant' || role === 'hos') {
-        document.getElementById('nav-tenant').classList.remove('hidden');
-        document.getElementById('tenant-dashboard').classList.remove('view-hidden');
-        document.getElementById('tenant-dashboard').classList.add('view-active');
-        populateTenantDashboard();
+        if (navTenant) navTenant.classList.remove('hidden');
+
+        // --- TIER FEATURE LOCK (TENANT: PRE-REGISTRATION) ---
+        const preRegNavBtn = document.getElementById('nav-tenant-prereg'); 
+        if (preRegNavBtn) {
+            if (tier === 1) {
+                preRegNavBtn.classList.add('tier-locked');
+                console.warn("Security Alert: Ghost Protocol UI locked for Tier 1 tenant.");
+            } else {
+                preRegNavBtn.classList.remove('tier-locked');
+            }
+        }
+
+        // Switch to the tenant dashboard and pass the first nav item to highlight it
+        const firstTenantNavItem = document.querySelector('#nav-tenant .nav-item');
+        switchTenantView('tenant-dashboard', firstTenantNavItem);
+        
+        if (typeof populateTenantDashboard === 'function') populateTenantDashboard();
     }
 }
 
@@ -1208,4 +1251,189 @@ function loadSavedTheme() {
         // Make sure the UI toggle switch matches the saved state!
         if (themeToggle) themeToggle.checked = true; 
     }
+}
+
+/**
+ * switchTenantView: Manages state-driven navigation for the Tenant Portal
+ * @param {string} viewId - The DOM ID of the section to display
+ * @param {HTMLElement} navElement - The clicked anchor tag (for UI styling)
+ */
+function switchTenantView(viewId, navElement = null) {
+    // 1. UI Feedback: Update the active navigation link
+    // Trade-off: Querying the DOM is slow, but for a small navbar, O(N) is perfectly fine.
+    if (navElement) {
+        const navItems = document.querySelectorAll('#nav-tenant .nav-item');
+        navItems.forEach(item => item.classList.remove('active'));
+        navElement.classList.add('active');
+    }
+
+    // 2. State Cleanup: Hide all possible Tenant-specific views
+    // We maintain a strict array of valid views to prevent scope leak.
+    const allTenantViews = [
+        'tenant-dashboard', 
+        'tenant-pre-reg', 
+        'tenant-history', 
+        'tenant-employees',
+        'settings-view' // Shared with guard, but context changes
+    ];
+    
+    allTenantViews.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.add('view-hidden');
+            el.classList.remove('view-active');
+        }
+    });
+
+    // 3. View Activation: Show the target view (O(1) DOM lookup)
+    const targetView = document.getElementById(viewId);
+    if (targetView) {
+        targetView.classList.remove('view-hidden');
+        targetView.classList.add('view-active');
+        console.log(`SentriHawk Log: Switched to Tenant View [${viewId}]`);
+    } else {
+        // Security/Debugging: Catch if we pass a bad ID
+        console.warn(`SentriHawk Warning: Attempted to route to non-existent view: ${viewId}`);
+        return; 
+    }
+
+    // 4. View-Specific Logic (Controller Layer)
+    // Trigger data fetching or UI resets based on the view selected.
+    // We use typeof checks to prevent crashes since we haven't built these functions yet.
+    switch(viewId) {
+        case 'tenant-dashboard':
+            if (typeof updateTenantStats === 'function') {
+                updateTenantStats(); 
+            }
+            break;
+            
+        case 'tenant-pre-reg':
+            console.info("Ghost Protocol: Ready for secure VIP input.");
+            if (typeof clearPreRegForm === 'function') {
+                clearPreRegForm();
+            }
+            break;
+
+        case 'tenant-history':
+            // Security Note: In a real backend, this request MUST include a JWT token
+            // so the server enforces Row-Level Security (RLS) to only return THIS tenant's data.
+            if (typeof renderTenantHistory === 'function') {
+                renderTenantHistory();
+            }
+            break;
+
+        case 'tenant-employees':
+            if (typeof loadEmployeeDirectory === 'function') {
+                loadEmployeeDirectory();
+            }
+            break;
+    }
+}
+
+/**
+ * Populates the Tenant Dashboard by filtering the global data to ONLY 
+ * include visitors explicitly bound to the logged-in tenant.
+ * @param {string} filter - 'ALL', 'EXPECTED', 'ON_SITE', 'VIP', 'BLACKLIST'
+ */
+function populateTenantDashboard(filter = 'ALL') {
+    // 1. Data Privacy Guardrail: Identify the current tenant
+    const myTenantId = state.user.id; 
+    
+    // Defensive Programming: Failsafe in case state is corrupted
+    if (!myTenantId) {
+        console.error("Security Fault: No Tenant ID found in active state.");
+        return;
+    }
+
+    // 2. Data Isolation: Filter visitors strictly to my tenant's destination
+    // If state.visitors doesn't exist yet, fallback to an empty array
+    const allVisitors = state.visitors || [];
+    const myVisitors = allVisitors.filter(v => v.destination === myTenantId);
+
+    // 3. Calculate Dashboard Statistics
+    let expectedCount = 0;
+    let onsiteCount = 0;
+    let vipCount = 0;
+    let blacklistCount = 0;
+
+    myVisitors.forEach(v => {
+        if (v.status === 'EXPECTED') expectedCount++;
+        if (v.status === 'ON_SITE') onsiteCount++;
+        if (v.isVIP) vipCount++; // Assuming you have an isVIP boolean in your mock data
+        if (v.status === 'RESTRICTED' || v.isBlacklisted) blacklistCount++;
+    });
+
+    // Update DOM Stats Cards
+    document.getElementById('tenant-stat-expected').textContent = expectedCount;
+    document.getElementById('tenant-stat-onsite').textContent = onsiteCount;
+    document.getElementById('tenant-stat-vip').textContent = vipCount;
+    document.getElementById('tenant-stat-blacklist').textContent = blacklistCount;
+
+    // 4. Apply Dynamic UI Filters
+    let displayVisitors = myVisitors;
+    const titleEl = document.getElementById('tenant-table-title');
+
+    switch(filter) {
+        case 'EXPECTED':
+            displayVisitors = myVisitors.filter(v => v.status === 'EXPECTED');
+            titleEl.textContent = "Expected Visitors";
+            break;
+        case 'ON_SITE':
+            displayVisitors = myVisitors.filter(v => v.status === 'ON_SITE');
+            titleEl.textContent = "Currently In Building";
+            break;
+        case 'VIP':
+            displayVisitors = myVisitors.filter(v => v.isVIP);
+            titleEl.textContent = "VIPs Arriving";
+            break;
+        case 'BLACKLIST':
+            displayVisitors = myVisitors.filter(v => v.status === 'RESTRICTED' || v.isBlacklisted);
+            titleEl.textContent = "Blacklist Alerts";
+            break;
+        default:
+            titleEl.textContent = "My Recent Activity";
+            break;
+    }
+
+    // Sort by most recent entry
+    displayVisitors.sort((a, b) => new Date(b.timeIn || b.date) - new Date(a.timeIn || a.date));
+
+    // 5. Render the Table Rows
+    const tbody = document.getElementById('tenant-overview-table');
+    tbody.innerHTML = ''; // Clear previous
+
+    if (displayVisitors.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--text-muted); padding: 20px;">No records found.</td></tr>`;
+        return;
+    }
+
+    displayVisitors.forEach(v => {
+        // Evaluate Status Badges
+        let statusBadge = `<span class="status-tag" style="background: #e2e8f0; color: #475569;">Unknown</span>`;
+        if (v.status === 'EXPECTED') statusBadge = `<span class="status-tag" style="background: #fef08a; color: #854d0e;">Expected</span>`;
+        if (v.status === 'ON_SITE') statusBadge = `<span class="status-tag" style="background: #bbf7d0; color: #166534;">On Site</span>`;
+        if (v.status === 'SIGNED_OUT') statusBadge = `<span class="status-tag" style="background: #e2e8f0; color: #475569;">Signed Out</span>`;
+        if (v.status === 'RESTRICTED' || v.isBlacklisted) statusBadge = `<span class="status-tag text-danger" style="background: #fee2e2;">Restricted</span>`;
+
+        const timeInStr = v.timeIn ? v.timeIn : '--:--';
+        const timeOutStr = v.timeOut ? v.timeOut : '--:--';
+
+        // Create and inject the table row
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="font-weight: 500;">
+                ${v.name} 
+                ${v.isVIP ? '<span style="color: #eab308; margin-left: 5px; font-size: 0.8rem;">★ VIP</span>' : ''}
+            </td>
+            <td>${statusBadge}</td>
+            <td>${timeInStr}</td>
+            <td>${timeOutStr}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// Wrapper function mapped to the onclick events in the HTML
+function setTenantFilter(filterType) {
+    populateTenantDashboard(filterType);
 }

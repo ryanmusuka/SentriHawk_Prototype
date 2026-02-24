@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SentriHawk Access Terminal</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=2">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="data.js"></script>
 </head>
@@ -67,8 +67,13 @@
             </nav>
 
             <nav id="nav-tenant" class="hidden">
-                <a href="#" class="nav-item active">Dashboard</a>
-                <a href="#" class="nav-item">History</a>
+                <a href="#" class="nav-item active" onclick="switchTenantView('tenant-dashboard', this)">Overview</a>
+                <a href="#" class="nav-item" onclick="switchTenantView('tenant-calendar', this)">Calendar</a>
+                <a href="#" id="nav-tenant-prereg" class="nav-item" onclick="switchTenantView('tenant-pre-reg', this)">Pre-Registration</a>
+                <a href="#" class="nav-item" onclick="switchTenantView('tenant-history', this)">History</a>
+                <a href="#" class="nav-item" onclick="switchTenantView('tenant-deliveries', this)">Deliveries</a>
+                <a href="#" class="nav-item" onclick="switchTenantView('tenant-communicate', this)">Communicate</a>
+                <a href="#" class="nav-item" onclick="switchTenantView('settings-view', this)">Settings</a>
                 <a href="#" class="nav-item" onclick="logout()">Sign out</a>
             </nav>
         </aside>
@@ -97,7 +102,7 @@
                 </div>
 
                 <div class="card data-table-card">
-                    <h3 id="guard-table-title" style="display: inline-block;">Recent Activity</h3>
+                    <h3 id="guard-table-title" style="cursor: pointer; display: inline-block;">Recent Activity</h3>
                     <span onclick="setDashboardFilter('ALL')" style="float: right; color: var(--primary-action); font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-top: 5px;">View All Activity</span>
                     <table>
                         <thead>
@@ -434,11 +439,47 @@
 </div>
 
             <div id="tenant-dashboard" class="sub-view view-hidden">
-                <header class="page-header">
-                    <h2>Home</h2>
-                    <button class="btn-primary" onclick="openGhostModal()">Generate VIP pass</button>
-                </header>
-            </div>
+    <header class="page-header">
+        <h2>Tenant Overview</h2>
+        <button class="btn-primary" onclick="switchTenantView('tenant-pre-reg')">+ VIP Pre-Registration</button>
+    </header>
+
+    <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="stat-card" style="cursor: pointer;" onclick="setTenantFilter('EXPECTED')">
+            <p class="stat-label">Expected Today</p>
+            <h3 class="stat-value" id="tenant-stat-expected">0</h3> 
+        </div>
+        <div class="stat-card" style="cursor: pointer;" onclick="setTenantFilter('ON_SITE')">
+             <p class="stat-label">In Building</p>
+             <h3 class="stat-value" id="tenant-stat-onsite">0</h3> 
+        </div>
+        <div class="stat-card" style="cursor: pointer;" onclick="setTenantFilter('VIP')">
+             <p class="stat-label">VIPs Arriving</p>
+             <h3 class="stat-value" id="tenant-stat-vip">0</h3> 
+        </div>
+        <div class="stat-card" style="cursor: pointer; border-left: 4px solid #ef4444;" onclick="setTenantFilter('BLACKLIST')">
+             <p class="stat-label">Blacklist Matches</p>
+             <h3 class="stat-value text-danger" id="tenant-stat-blacklist">0</h3> 
+        </div>
+    </div>
+
+    <div class="card data-table-card">
+        <h3 id="tenant-table-title" style="cursor: pointer; display: inline-block;">My Recent Activity</h3>
+        <span onclick="setTenantFilter('ALL')" style="float: right; color: var(--primary-action); font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-top: 5px;">View All Activity</span>
+        <table>
+            <thead>
+                <tr>
+                    <th>Visitor Name</th>
+                    <th>Status</th>
+                    <th>Time In</th>
+                    <th>Time Out</th>
+                </tr>
+            </thead>
+            <tbody id="tenant-overview-table">
+                </tbody>
+        </table>
+    </div>
+</div>
 
         </main>
     </section>
