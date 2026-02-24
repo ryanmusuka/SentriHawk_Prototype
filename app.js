@@ -56,6 +56,8 @@ function transitionToApp() {
     document.getElementById('role-badge').textContent = state.user.role;
 
     routeUser(); // Proceed to load the correct dashboard
+    initSettingsTab();
+    loadSavedTheme()
 }
 
 function triggerLoginError() {
@@ -76,12 +78,27 @@ function logout() {
     location.reload(); 
 }
 
+
 // 2. ROUTING & NAVIGATION
 function routeUser() {
     const role = state.user.role;
     
     if (role === 'guard') {
         document.getElementById('nav-guard').classList.remove('hidden');
+
+        // --- NEW: TIER FEATURE LOCK (DELIVERIES) ---
+        const tier = state.building.tier || 1; 
+        const deliveryNavBtn = document.getElementById('nav-guard-deliveries'); 
+        
+        if (deliveryNavBtn) {
+            if (tier === 1) {
+                deliveryNavBtn.style.display = 'none'; // Lock out Tier 1
+            } else {
+                deliveryNavBtn.style.display = 'block'; // Allow Tier 2 & 3
+            }
+        }
+        // -------------------------------------------
+
         switchGuardView('guard-dashboard');
         populateGuardDashboard();
     } else if (role === 'tenant' || role === 'hos') {
@@ -108,7 +125,7 @@ function switchGuardView(viewId, navElement = null) {
     const allGuardViews = [
         'guard-dashboard', 'guard-registration', 
         'guard-history', 'guard-deliveries', 
-        'guard-communicate', 'guard-settings'
+        'guard-communicate', 'settings-view'
     ];
     
     allGuardViews.forEach(id => {
@@ -530,6 +547,14 @@ function renderHistoryTable() {
         return matchSearch && hasVisitOnDate;
     });
     
+    // --- THE FIX: Update the UI counter ---
+    const countHeader = document.getElementById('history-total-count');
+    if (countHeader) {
+        const plural = matches.length === 1 ? '' : 's';
+        countHeader.innerText = `${matches.length} Visitor${plural}`;
+    }
+    // --------------------------------------
+
     if (matches.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 40px;">No records found for this date.</td></tr>`;
         return;
@@ -661,4 +686,526 @@ function selectCustomDate(year, month, day, e) {
     
     // Update the UI using your existing function!
     updateHistoryUI(); 
+}
+
+// --- DELIVERIES LOGIC ---
+
+let activePackages = [];
+let collectedPackages = [];
+let packageCounter = 1; 
+let activeTenantRequestSource = null; 
+
+// 1. Open/Close General Modals
+function openLogPackageModal() {
+    const modal = document.getElementById('modal-log-package');
+    modal.classList.remove('hidden'); 
+    modal.style.display = 'flex';
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    modal.classList.add('hidden'); 
+    modal.style.display = 'none';
+}
+
+// 2. Open Specific Package Details Modal
+function openPackageDetails(pkgId) {
+    // Find the package in our array
+    const pkg = activePackages.find(p => p.id === pkgId);
+    if (!pkg) return;
+    
+    // Populate the profile card
+    document.getElementById('detail-courier').innerText = pkg.courier;
+    document.getElementById('detail-info').innerText = pkg.details;
+    document.getElementById('detail-destination').innerText = pkg.destination;
+    document.getElementById('detail-time').innerText = pkg.time;
+    
+    // Wire up the "Mark Collected" button on the profile card
+    const collectBtn = document.getElementById('detail-btn-collect');
+    collectBtn.onclick = function() {
+        // Close profile card and open the handover form
+        closeModal('modal-package-details');
+        openCollectModal(pkg.id, pkg.courier);
+    };
+    
+    // Show the profile card
+    const modal = document.getElementById('modal-package-details');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+}
+
+// 3. Action Buttons
+function notifyRecipient() {
+    // For now, this just shows an alert. Later it can trigger an email/SMS API.
+    alert("Notification sent to the tenant!");
+    closeModal('modal-package-details');
+}
+
+function openCollectModal(pkgId, courierName) {
+    document.getElementById('collect-pkg-id').value = pkgId;
+    document.getElementById('collect-pkg-name').innerText = `Handing over: ${courierName}`;
+    
+    const modal = document.getElementById('modal-mark-collected');
+    modal.classList.remove('hidden'); 
+    modal.style.display = 'flex';
+}
+
+// 4. Tenant Grid Logic
+function openTenantGridFor(source) {
+    activeTenantRequestSource = source;
+    
+    // Temporarily hide the active modal so the grid can take over
+    if (source === 'package') {
+        document.getElementById('modal-log-package').classList.add('hidden');
+        document.getElementById('modal-log-package').style.display = 'none';
+    } else if (source === 'collection') {
+        document.getElementById('modal-mark-collected').classList.add('hidden');
+        document.getElementById('modal-mark-collected').style.display = 'none';
+    }
+
+    const grid = document.getElementById('tenant-grid');
+    grid.innerHTML = ''; 
+    
+    tenants.forEach(t => {
+        grid.innerHTML += `
+            <div class="tenant-card" onclick="selectTenant('${t.name}', this)">
+                <div class="tenant-logo">${t.logo}</div>
+                <div class="tenant-name">${t.name}</div>
+            </div>
+        `;
+    });
+    
+    const directoryModal = document.getElementById('tenant-directory-modal');
+    directoryModal.classList.remove('hidden');
+    directoryModal.style.display = 'flex'; 
+}
+
+function closeTenantGrid() {
+    document.getElementById('tenant-directory-modal').classList.add('hidden');
+    document.getElementById('tenant-directory-modal').style.display = 'none';
+}
+
+function selectTenant(tenantName, element) {
+    element.classList.add('selected-flash');
+    
+    setTimeout(() => {
+        closeTenantGrid();
+        
+        if (activeTenantRequestSource === 'package') {
+            document.getElementById('pkg-destination-display').innerText = tenantName;
+            document.getElementById('pkg-destination-display').style.color = '#1e293b'; 
+            document.getElementById('pkg-destination-value').value = tenantName;
+            
+            const pkgModal = document.getElementById('modal-log-package');
+            pkgModal.classList.remove('hidden');
+            pkgModal.style.display = 'flex';
+            
+        } else if (activeTenantRequestSource === 'collection') {
+            document.getElementById('collect-tenant-display').innerText = tenantName;
+            document.getElementById('collect-tenant-display').style.color = '#1e293b';
+            document.getElementById('collect-tenant-value').value = tenantName;
+            
+            const collectModal = document.getElementById('modal-mark-collected');
+            collectModal.classList.remove('hidden');
+            collectModal.style.display = 'flex';
+            
+        } else {
+            // VISITOR FLOW
+            const destBox = document.getElementById('destination-selector');
+            const destText = document.getElementById('destination-text');
+            const destInput = document.getElementById('v-destination');
+            
+            if (destInput) destInput.value = tenantName; 
+            if (destText) destText.innerText = tenantName; 
+            if (destBox) destBox.classList.add('has-selection'); 
+        }
+        
+        activeTenantRequestSource = null;
+    }, 250);
+}
+
+// 5. Submit a New Package
+function submitNewPackage() {
+    const courier = document.getElementById('pkg-courier').value;
+    const details = document.getElementById('pkg-details').value;
+    const destination = document.getElementById('pkg-destination-value').value; 
+
+    if (!courier || !details || !destination) {
+        alert("Please fill in all package details and select a destination.");
+        return;
+    }
+
+    const now = new Date();
+    const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const dateString = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const timestamp = `${dateString}, ${timeString}`;
+
+    // Store properties individually for cleaner UI later
+    const newPackage = {
+        id: 'pkg-' + packageCounter++,
+        courier: courier,
+        details: details,
+        destination: destination,
+        time: timestamp
+    };
+
+    activePackages.push(newPackage);
+    
+    document.getElementById('pkg-courier').value = '';
+    document.getElementById('pkg-details').value = '';
+    document.getElementById('pkg-destination-value').value = '';
+    document.getElementById('pkg-destination-display').innerText = '+ Select Destination Tenant';
+    
+    closeModal('modal-log-package');
+    renderDeliveries();
+}
+
+
+// 6. Mark Package as Collected
+function submitCollectedPackage() {
+    const pkgId = document.getElementById('collect-pkg-id').value;
+    const employeeName = document.getElementById('collect-employee-name').value;
+    const tenant = document.getElementById('collect-tenant-value').value; 
+
+    if (!employeeName || !tenant) {
+        alert("Please enter the employee's name and select a company.");
+        return;
+    }
+
+    const packageIndex = activePackages.findIndex(p => p.id === pkgId);
+    if (packageIndex > -1) {
+        const collectedPkg = activePackages.splice(packageIndex, 1)[0];
+        collectedPkg.collectedBy = employeeName;
+        collectedPkg.collectedTenant = tenant;
+        
+        const now = new Date();
+        collectedPkg.collectedTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        // -----------------------------------------------
+
+        collectedPackages.push(collectedPkg);
+    }
+
+    document.getElementById('collect-employee-name').value = '';
+    document.getElementById('collect-tenant-value').value = '';
+    document.getElementById('collect-tenant-display').innerText = '+ Select Company';
+    
+    closeModal('modal-mark-collected');
+    renderDeliveries();
+}
+
+// 7. Render the UI
+function renderDeliveries() {
+    const awaitingList = document.getElementById('awaiting-pickup-list');
+    const collectedList = document.getElementById('collected-history-list');
+
+    awaitingList.innerHTML = '';
+    collectedList.innerHTML = '';
+
+   // Draw Awaiting Packages
+    if (activePackages.length === 0) {
+        awaitingList.innerHTML = '<tr><td colspan="3" style="padding: 16px; text-align: center; color: var(--text-muted);">No packages waiting.</td></tr>';
+    } else {
+        activePackages.forEach(pkg => {
+            awaitingList.innerHTML += `
+                <tr class="table-row-hover" onclick="openPackageDetails('${pkg.id}')">
+                    <td style="padding: 16px 8px; color: var(--text-main);"><strong>${pkg.courier}</strong></td>
+                    <td style="padding: 16px 8px; color: var(--text-main);">${pkg.destination}</td>
+                    <td style="padding: 16px 8px; color: var(--text-muted);">${pkg.time}</td>
+                </tr>
+            `;
+        });
+    }
+
+    // Draw Collected History
+    if (collectedPackages.length === 0) {
+        // Updated colspan to 3 to account for the new Time column
+        collectedList.innerHTML = '<tr><td colspan="3" style="padding: 16px; text-align: center; color: var(--text-muted);">No collections today.</td></tr>';
+    } else {
+        collectedPackages.forEach(pkg => {
+            collectedList.innerHTML += `
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 16px 8px; vertical-align: top;">
+                        <strong style="color: var(--text-main);">${pkg.courier}</strong>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">${pkg.details}</div>
+                    </td>
+                    <td style="padding: 16px 8px;">
+                        <div style="font-weight: 600; color: var(--text-main);">${pkg.collectedBy}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">${pkg.collectedTenant}</div>
+                    </td>
+                    <td style="padding: 16px 8px; color: var(--text-main);">
+                        ${pkg.collectedTime}
+                    </td>
+                </tr>
+            `;
+        });
+    }
+}
+
+// Run this once when the page loads
+renderDeliveries();
+
+// --- COMMUNICATE TAB LOGIC ---
+
+let currentSystemTier = 3; 
+
+const recentChats = [
+    { id: 'c1', name: 'Sarah Jenkins', company: 'Stark Industries', lastMsg: 'I will be right down.', time: '10:42 AM' },
+    { id: 'c2', name: 'Marcus Chen', company: 'Nexus Tech', lastMsg: 'Can you hold the package?', time: '09:15 AM' },
+    { id: 'c3', name: 'Elena Rodriguez', company: 'Wayne Enterprises', lastMsg: 'Thanks, guard.', time: 'Yesterday' },
+];
+
+let activeChatId = null;
+
+function initCommunicateTab() {
+    const premiumElements = document.querySelectorAll('.premium-feature');
+    premiumElements.forEach(el => {
+        if (currentSystemTier === 1) {
+            el.style.display = 'none';
+        } else {
+            el.style.display = el.id === 'quick-replies-bar' ? 'flex' : (el.id === 'btn-emergency-broadcast' ? 'flex' : 'inline-block');
+        }
+    });
+    renderChatList();
+}
+
+function filterTenants() {
+    // 1. Get the search text and convert to lowercase for easier matching
+    const searchTerm = document.getElementById('comm-search-bar').value.toLowerCase();
+    
+    // 2. Loop through your chat data
+    recentChats.forEach(chat => {
+        const row = document.getElementById(`chat-row-${chat.id}`);
+        
+        if (row) {
+            // Check if name or company includes the search term
+            const matchesName = chat.name.toLowerCase().includes(searchTerm);
+            const matchesCompany = chat.company.toLowerCase().includes(searchTerm);
+            
+            // 3. Show if it matches, hide if it doesn't
+            if (matchesName || matchesCompany) {
+                row.style.display = 'block';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    });
+}
+
+function renderChatList() {
+    const listContainer = document.getElementById('chat-tenant-list');
+    listContainer.innerHTML = '';
+
+    recentChats.forEach(chat => {
+        listContainer.innerHTML += `
+            <div id="chat-row-${chat.id}" class="chat-list-item" onclick="selectChat('${chat.id}', '${chat.name}', '${chat.company}')">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+                    <strong class="chat-name-text">${chat.name}</strong>
+                    <span class="chat-time-text">${chat.time}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span class="chat-msg-text">${chat.lastMsg}</span>
+                    <span class="chat-company-text">${chat.company}</span>
+                </div>
+            </div>
+        `;
+    });
+}
+
+function selectChat(id, name, company) {
+    activeChatId = id;
+
+    // Remove 'selected' class from all rows, add to the clicked one
+    document.querySelectorAll('.chat-list-item').forEach(el => el.classList.remove('selected'));
+    const selectedRow = document.getElementById(`chat-row-${id}`);
+    if (selectedRow) selectedRow.classList.add('selected');
+
+    // Update Header
+    document.getElementById('active-chat-name').innerText = name;
+    document.getElementById('active-chat-company').innerText = company;
+
+    // Load Mock Messages using the new CSS classes
+    const msgArea = document.getElementById('chat-messages-area');
+    msgArea.innerHTML = `
+        <div class="bubble-tenant">
+            Are there any packages for me today?
+        </div>
+        <div class="bubble-guard">
+            Yes, a FedEx box arrived 10 mins ago. I logged it in the system.
+        </div>
+        <div class="bubble-tenant">
+            Perfect, ${recentChats.find(c => c.id === id).lastMsg}
+        </div>
+    `;
+    
+    msgArea.scrollTop = msgArea.scrollHeight;
+}
+
+function handleChatEnter(event) {
+    if (event.key === 'Enter') sendChatMessage();
+}
+
+function sendQuickReply(text) {
+    document.getElementById('chat-input-field').value = text;
+    sendChatMessage();
+}
+
+function sendChatMessage() {
+    if (!activeChatId) {
+        alert("Please select a tenant from the list first.");
+        return;
+    }
+
+    const input = document.getElementById('chat-input-field');
+    const msgText = input.value.trim();
+    if (!msgText) return;
+
+    const msgArea = document.getElementById('chat-messages-area');
+    
+    // Add Guard's message using the orange bubble class
+    msgArea.innerHTML += `<div class="bubble-guard">${msgText}</div>`;
+
+    input.value = '';
+    msgArea.scrollTop = msgArea.scrollHeight; 
+}
+
+// Run init
+initCommunicateTab();
+
+// --- EMERGENCY MODAL LOGIC ---
+
+function openEmergencyModal() {
+    // Show the modal by removing 'hidden' class (matching your existing modal logic)
+    document.getElementById('modal-emergency').classList.remove('hidden');
+    // Reset dropdown
+    document.getElementById('emergency-type-select').value = ""; 
+}
+
+function closeEmergencyModal() {
+    document.getElementById('modal-emergency').classList.add('hidden');
+}
+
+function sendEmergencyBroadcast() {
+    const reason = document.getElementById('emergency-type-select').value;
+
+    if (!reason) {
+        alert("Please select a reason before sending.");
+        return;
+    }
+
+    // Prototype confirmation
+    alert(`🚨 EMERGENCY ALERT: "${reason}" broadcasted to all tenants successfully.`);
+    closeEmergencyModal();
+}
+
+// Ensure the Emergency button has the trigger (add this to your init function)
+document.getElementById('btn-emergency-broadcast').onclick = openEmergencyModal;
+
+// --- SETTINGS / CONTROL CENTER LOGIC ---
+
+function initSettingsTab() {
+    // Safety check: Make sure a user is actually logged in before building settings
+    if (!state.user || !state.user.role) {
+        console.warn("No user logged in. Skipping settings initialization.");
+        return; 
+    }
+    
+    renderRoleSpecificSettings();
+}
+
+function renderRoleSpecificSettings() {
+    const container = document.getElementById('role-specific-card');
+    if (!container) return; // Prevent errors if HTML isn't loaded
+
+    let htmlContent = '';
+
+    // Automatically determine role based on login info!
+    // Using .toLowerCase() just in case your DB returns "Guard" instead of "guard"
+    const userRole = state.user.role.toLowerCase(); 
+
+    switch(userRole) {
+        case 'guard':
+            htmlContent = `
+                <h3>Guard Controls</h3>
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-text">
+                            <strong>Quick Reply Editor</strong>
+                            <span>Customize the fast-reply chips in the Communicate tab.</span>
+                        </div>
+                    </div>
+                    <button class="btn-settings-action">Edit Chips</button>
+                </div>
+            `;
+            break;
+
+        case 'tenant':
+            htmlContent = `
+                <h3>Tenant Privacy</h3>
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-text">
+                            <strong>Auto-Approve List</strong>
+                            <span>Add regular visitors (e.g., family) to skip guard alerts.</span>
+                        </div>
+                    </div>
+                    <button class="btn-settings-action">Manage Guests</button>
+                </div>
+            `;
+            break;
+
+        case 'hos':
+            htmlContent = `
+                <h3>Administrative Actions</h3>
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-icon"></div>
+                        <div class="setting-text">
+                            <strong>System Audit Logs</strong>
+                            <span>Access highly restricted entry history and guard activity.</span>
+                        </div>
+                    </div>
+                    <button class="btn-settings-action" style="background: #dc2626;">View Logs</button>
+                </div>
+            `;
+            break;
+    }
+
+    container.innerHTML = htmlContent;
+}
+
+// Simple Theme Toggle Logic
+function toggleDarkMode() {
+    const isDark = document.getElementById('setting-theme').checked;
+    if (isDark) {
+        document.body.classList.add('dark-mode');
+        console.log("Obsidian Dark Mode: ON");
+    } else {
+        document.body.classList.remove('dark-mode');
+        console.log("Light Mode: ON");
+    }
+}
+
+// --- THEME TOGGLE LOGIC ---
+
+function toggleDarkMode() {
+    const isDark = document.getElementById('setting-theme').checked;
+    
+    if (isDark) {
+        document.body.classList.add('dark-mode');
+        localStorage.setItem('sentrihawk_theme', 'dark'); // Save preference
+    } else {
+        document.body.classList.remove('dark-mode');
+        localStorage.setItem('sentrihawk_theme', 'light'); // Save preference
+    }
+}
+
+function loadSavedTheme() {
+    const savedTheme = localStorage.getItem('sentrihawk_theme');
+    const themeToggle = document.getElementById('setting-theme');
+    
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        // Make sure the UI toggle switch matches the saved state!
+        if (themeToggle) themeToggle.checked = true; 
+    }
 }
