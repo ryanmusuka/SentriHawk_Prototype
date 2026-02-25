@@ -219,7 +219,7 @@ function populateGuardDashboard() {
     const tbody = document.getElementById('guard-overview-table');
     tbody.innerHTML = ''; 
     
-    const visitors = getVisitors(); 
+    const visitors = getGuardVisitors(); 
     
     // --- 1. THE MATH ENGINE ---
     let expectedCount = 0;
@@ -251,31 +251,45 @@ function populateGuardDashboard() {
         displayVisitors = displayVisitors.slice(0, 8); // ALL Activity: Just show last 8
     }
 
-    displayVisitors.forEach(v => {
+   displayVisitors.forEach(v => {
+        // 1. Guard Status & Data Extraction
         const currentStatus = v.status || (v.isBlacklisted ? 'FLAGGED' : 'EXPECTED');
-        
-        let statusClass = 'status-cleared'; 
-        if (currentStatus === 'FLAGGED') statusClass = 'status-flagged'; 
-        if (currentStatus === 'ON SITE') statusClass = 'status-active'; 
-        if (currentStatus === 'CHECKED OUT') statusClass = 'status-cleared'; 
-
-        const displayName = v.isGhost ? "VIP GUEST" : v.name;
-        
-        // NEW: Read from visits array instead of flat structure
         const latestVisit = (v.visits && v.visits.length > 0) ? v.visits[v.visits.length - 1] : {};
-        const timeIn = latestVisit.time_in ? latestVisit.time_in : '-';
-        const timeOut = latestVisit.time_out ? latestVisit.time_out : '-';
-        const dest = latestVisit.destination || 'Unknown';
+        
+        // Use visits data if available, fallback to root object data
+        const timeInStr = latestVisit.time_in || v.timeIn || '--:--';
+        const timeOutStr = latestVisit.time_out || v.timeOut || '--:--';
+        const dest = latestVisit.company || v.company || 'Unknown';
+        
+        // Guard specific: Hide the real name if they are a Ghost protocol VIP
+        const displayName = v.isGhost ? "VIP GUEST" : v.name;
 
-        tbody.innerHTML += `
-            <tr onclick="openVisitorProfile('${v.id}')">
-                <td><strong>${displayName}</strong></td>
-                <td>${dest}</td> 
-                <td><span class="status-tag ${statusClass}">${currentStatus}</span></td>
-                <td>${timeIn}</td>
-                <td>${timeOut}</td>
-            </tr>
+        // 2. Evaluate Status Badges (Using the exact styling from the Tenant view)
+        let statusBadge = `<span class="status-tag" style="background: #e2e8f0; color: #475569;">Unknown</span>`;
+        if (currentStatus === 'EXPECTED') statusBadge = `<span class="status-tag" style="background: #fef08a; color: black;">Expected</span>`;
+        if (currentStatus === 'ON SITE' || currentStatus === 'ON_SITE') statusBadge = `<span class="status-tag" style="background: #bbf7d0; color: #166534;">On Site</span>`;
+        if (currentStatus === 'CHECKED OUT' || currentStatus === 'SIGNED_OUT') statusBadge = `<span class="status-tag" style="background: #e2e8f0; color: #475569;">Signed Out</span>`;
+        if (currentStatus === 'FLAGGED' || currentStatus === 'RESTRICTED' || v.isBlacklisted) statusBadge = `<span class="status-tag text-danger" style="background: #fee2e2;">Restricted</span>`;
+
+        // 3. Create and inject the table row (Tenant method)
+        const tr = document.createElement('tr');
+        
+        // Keep the Guard's ability to click the row to see the profile
+        tr.setAttribute('onclick', `openVisitorProfile('${v.id}')`);
+        tr.style.cursor = 'pointer'; // Adds a pointer so guards know it's clickable
+
+        // Notice we kept the 5 columns so it aligns with the Guard's table headers
+        tr.innerHTML = `
+            <td style="font-weight: 500;">
+                ${displayName} 
+                ${v.isVIP ? '<span style="color: #eab308; margin-left: 5px; font-size: 0.8rem;">★ VIP</span>' : ''}
+            </td>
+            <td>${dest}</td> 
+            <td>${statusBadge}</td>
+            <td>${timeInStr}</td>
+            <td>${timeOutStr}</td>
         `;
+        tbody.appendChild(tr);
     });
 }
 // === Tier-Based Feature Locking ===
@@ -354,7 +368,7 @@ function closeVisitorProfile() {
 }
 
 function openVisitorProfile(id) {
-    const visitors = getVisitors();
+    const visitors = getGuardVisitors();
     const visitor = visitors.find(v => v.id === id);
     if (!visitor) return;
 
@@ -388,37 +402,68 @@ function openVisitorProfile(id) {
 function markVisitorArrived() {
     if (!activeVisitorId) return;
 
-    let visitors = getVisitors();
+    let visitors = getGuardVisitors();
     const visitorIndex = visitors.findIndex(v => v.id === activeVisitorId);
     
     if (visitorIndex !== -1) {
-        visitors[visitorIndex].status = 'ON SITE';
-        // Auto-stamp Time In to the latest visit
-        let latestVisit = visitors[visitorIndex].visits[visitors[visitorIndex].visits.length - 1];
-        if(latestVisit) latestVisit.time_in = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        visitors[visitorIndex].last_seen = new Date().toLocaleString(); 
+        let visitor = visitors[visitorIndex];
+        visitor.status = 'ON SITE';
         
-        sessionStorage.setItem('sentrihawk_visitors', JSON.stringify(visitors));
+        // 1. Ensure the visits array exists
+        if (!visitor.visits) {
+            visitor.visits = [];
+        }
+        
+        // 2. Dynamically build the exact record the History tab is looking for
+        const todayStr = new Date().toISOString().split('T')[0];
+        visitor.visits.push({
+            date: todayStr,
+            destination: visitor.company || 'Unknown',
+            time_in: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+            time_out: null
+        });
+        
+        visitor.last_seen = new Date().toLocaleString(); 
+        
+        // Save to the database
+        sessionStorage.setItem('sentrihawk_guard_visitors', JSON.stringify(visitors));
     }
 
     closeVisitorProfile();
     populateGuardDashboard(); 
 }
 
-// NEW: Sign Out function
 function signVisitorOut() {
     if (!activeVisitorId) return;
 
-    let visitors = getVisitors();
+    let visitors = getGuardVisitors();
     const visitorIndex = visitors.findIndex(v => v.id === activeVisitorId);
     
     if (visitorIndex !== -1) {
-        visitors[visitorIndex].status = 'CHECKED OUT';
-        // Auto-stamp Time Out to the latest visit
-        let latestVisit = visitors[visitorIndex].visits[visitors[visitorIndex].visits.length - 1];
-        if(latestVisit) latestVisit.time_out = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        let visitor = visitors[visitorIndex];
         
-        sessionStorage.setItem('sentrihawk_visitors', JSON.stringify(visitors));
+        // Change status so the dashboard badge updates
+        visitor.status = 'CHECKED OUT'; 
+        
+        // Find the most recent visit (the one we just created during sign-in)
+        if (visitor.visits && visitor.visits.length > 0) {
+            let latestVisit = visitor.visits[visitor.visits.length - 1];
+            latestVisit.time_out = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        } else {
+            // Failsafe: If a guard somehow signs someone out without signing them in first
+            const todayStr = new Date().toISOString().split('T')[0];
+            visitor.visits = [{
+                date: todayStr,
+                destination: visitor.company || 'Unknown',
+                time_in: '--:--',
+                time_out: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+            }];
+        }
+        
+        visitor.last_seen = new Date().toLocaleString(); 
+        
+        // Save back to the correct Guard database
+        sessionStorage.setItem('sentrihawk_guard_visitors', JSON.stringify(visitors));
     }
 
     closeVisitorProfile();
@@ -458,7 +503,7 @@ function verifyVisitor(e) {
         return; 
     } 
     
-    let visitors = getVisitors();
+    let visitors = getGuardVisitors();
     let todayDate = new Date().toISOString().split('T')[0];
     let timeString = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
@@ -580,7 +625,7 @@ function renderHistoryTable() {
     const searchInput = document.getElementById('history-search');
     const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
     const targetDate = historyDate.toISOString().split('T')[0];
-    const visitors = getVisitors();
+    const visitors = getGuardVisitors();
     
     let matches = visitors.filter(person => {
         const matchSearch = person.name.toLowerCase().includes(searchTerm) || 
@@ -621,7 +666,7 @@ function renderHistoryTable() {
 }
 
 function openHistoryProfile(personId) {
-    const person = getVisitors().find(v => v.id === personId);
+    const person = getGuardVisitors().find(v => v.id === personId);
     if (!person) return;
     
     document.getElementById('history-main-list').classList.add('hidden');
@@ -1337,7 +1382,7 @@ function switchTenantView(viewId, navElement = null) {
  */
 function populateTenantDashboard(filter = 'ALL') {
     // 1. Data Privacy Guardrail: Identify the current tenant
-    const myTenantId = state.user.id; 
+    const myTenantId = state.user.username; 
     
     // Defensive Programming: Failsafe in case state is corrupted
     if (!myTenantId) {
@@ -1345,11 +1390,11 @@ function populateTenantDashboard(filter = 'ALL') {
         return;
     }
 
-    // 2. Data Isolation: Filter visitors strictly to my tenant's destination
-    // If state.visitors doesn't exist yet, fallback to an empty array
-    const allVisitors = state.visitors || [];
-    const myVisitors = allVisitors.filter(v => v.destination === myTenantId);
+    // 2. Fetch fresh data directly from your unified storage function
+    const allVisitors = getTenantVisitors(); 
 
+    // 3. Data Isolation: Filter visitors strictly to my tenant's destination
+    const myVisitors = allVisitors.filter(v => v.destination === myTenantId);
     // 3. Calculate Dashboard Statistics
     let expectedCount = 0;
     let onsiteCount = 0;
@@ -1359,7 +1404,7 @@ function populateTenantDashboard(filter = 'ALL') {
     myVisitors.forEach(v => {
         if (v.status === 'EXPECTED') expectedCount++;
         if (v.status === 'ON_SITE') onsiteCount++;
-        if (v.isVIP) vipCount++; // Assuming you have an isVIP boolean in your mock data
+        if (v.isVIP) vipCount++;
         if (v.status === 'RESTRICTED' || v.isBlacklisted) blacklistCount++;
     });
 
@@ -1391,7 +1436,7 @@ function populateTenantDashboard(filter = 'ALL') {
             titleEl.textContent = "Blacklist Alerts";
             break;
         default:
-            titleEl.textContent = "My Recent Activity";
+            titleEl.textContent = "Recent Activity";
             break;
     }
 
@@ -1410,7 +1455,7 @@ function populateTenantDashboard(filter = 'ALL') {
     displayVisitors.forEach(v => {
         // Evaluate Status Badges
         let statusBadge = `<span class="status-tag" style="background: #e2e8f0; color: #475569;">Unknown</span>`;
-        if (v.status === 'EXPECTED') statusBadge = `<span class="status-tag" style="background: #fef08a; color: #854d0e;">Expected</span>`;
+        if (v.status === 'EXPECTED') statusBadge = `<span class="status-tag" style="background: #fef08a; color: black;">Expected</span>`;
         if (v.status === 'ON_SITE') statusBadge = `<span class="status-tag" style="background: #bbf7d0; color: #166534;">On Site</span>`;
         if (v.status === 'SIGNED_OUT') statusBadge = `<span class="status-tag" style="background: #e2e8f0; color: #475569;">Signed Out</span>`;
         if (v.status === 'RESTRICTED' || v.isBlacklisted) statusBadge = `<span class="status-tag text-danger" style="background: #fee2e2;">Restricted</span>`;

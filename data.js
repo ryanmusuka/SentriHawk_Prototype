@@ -87,75 +87,111 @@ const tenants = [
 
 // --- 5. VISITORS (TEST CASES) ---
 const generateMockVector = () => Array.from({length: 10}, () => Math.random().toFixed(4));
+// --- 5. VISITORS (TEST CASES) ---
+const GUARD_STORAGE_KEY = 'sentrihawk_guard_visitors';
+const TENANT_STORAGE_KEY = 'sentrihawk_tenant_visitors';
+const todayStr = new Date().toISOString().split('T')[0];
 
-// FIXED: Renamed to DEFAULT_VISITORS to match your function logic below
-const DEFAULT_VISITORS = [
+const GUARD_VISITORS = [
     {
         id: "vis_001",
         name: "John Doe",
-        type: "standard",
+        document_id: "ID-99321",
+        phone: "+1 555 0192",
         company: "Delivery Co",
+        vrn: "ABC-123",
         isBlacklisted: false,
         isGhost: false,
-        face_vector: generateMockVector(),
-        last_seen: "2023-10-24 09:00"
+        status: "EXPECTED",
+        visits: [
+            { date: todayStr, time_in: null, time_out: null, destination: "Stark Logistics" }
+        ]
     },
     {
         id: "vis_002",
         name: "VIP GUEST", 
         real_name: "Senator Armstrong",
-        type: "vip",
+        document_id: "GOV-001",
+        phone: "Classified",
         company: "Government",
+        vrn: "STATE-1",
         isBlacklisted: false,
         isGhost: true, 
-        face_vector: generateMockVector(),
-        last_seen: "2023-10-23 14:00"
+        status: "EXPECTED",
+        visits: [
+            { date: todayStr, time_in: null, time_out: null, destination: "Quantum Financial" }
+        ]
     },
     {
         id: "vis_003",
         name: "Lazlo Panaflex",
-        type: "restricted",
+        document_id: "ID-RESTRICTED",
+        phone: "Unknown",
         company: "Unknown",
+        vrn: "N/A",
         isBlacklisted: true, 
         isGhost: false,
-        face_vector: generateMockVector(),
-        last_seen: "2023-09-12 18:30"
+        status: "FLAGGED",
+        visits: [
+            { date: "2026-02-15", time_in: "14:22", time_out: "14:25", destination: "Aegis Security" }
+        ]
     }
+];
+
+const TENANT_VISITORS = [
+    // === TENANT 1: Acme Accounting (username: tenant1) ===
+    { id: 'v101', name: 'Alice Cooper', destination: 'tenant1', status: 'EXPECTED', isVIP: true, isBlacklisted: false, timeIn: null, timeOut: null, date: todayStr },
+    { id: 'v102', name: 'Bob Builder', destination: 'tenant1', status: 'ON_SITE', isVIP: false, isBlacklisted: false, timeIn: '09:00', timeOut: null, date: todayStr },
+    { id: 'v103', name: 'Jobho Chipangura', destination: 'tenant1', status: 'RESTRICTED', isVIP: false, isBlacklisted: true, timeIn: null, timeOut: null, date: todayStr },
+    { id: 'v104', name: 'Charlie Davis', destination: 'tenant1', status: 'EXPECTED', isVIP: false, isBlacklisted: false, timeIn: null, timeOut: null, date: todayStr },
+
+    // === TENANT 2: Cyberdyne Systems (username: tenant2) ===
+    { id: 'v201', name: 'Sarah Connor', destination: 'tenant2', status: 'EXPECTED', isVIP: false, isBlacklisted: false, timeIn: null, timeOut: null, date: todayStr },
+    { id: 'v202', name: 'Miles Dyson', destination: 'tenant2', status: 'ON_SITE', isVIP: true, isBlacklisted: false, timeIn: '10:15', timeOut: null, date: todayStr },
+    { id: 'v203', name: 'T-1000', destination: 'tenant2', status: 'RESTRICTED', isVIP: false, isBlacklisted: true, timeIn: null, timeOut: null, date: todayStr },
+
+    // === TENANT 3: Stark Industries (username: tenant3) ===
+    { id: 'v301', name: 'Tony Stark', destination: 'tenant3', status: 'EXPECTED', isVIP: true, isBlacklisted: false, timeIn: null, timeOut: null, date: todayStr },
+    { id: 'v302', name: 'Peter Parker', destination: 'tenant3', status: 'ON_SITE', isVIP: false, isBlacklisted: false, timeIn: '08:45', timeOut: null, date: todayStr },
+    { id: 'v303', name: 'Nick Fury', destination: 'tenant3', status: 'ON_SITE', isVIP: true, isBlacklisted: false, timeIn: '11:00', timeOut: null, date: todayStr },
+    { id: 'v304', name: 'Justin Hammer', destination: 'tenant3', status: 'RESTRICTED', isVIP: false, isBlacklisted: true, timeIn: null, timeOut: null, date: todayStr }
 ];
 
 // --- 6. LOGIC & HELPERS ---
 
-// Initialize Storage
-function initStorage() {
-    if (!sessionStorage.getItem('sentrihawk_visitors')) {
-        sessionStorage.setItem('sentrihawk_visitors', JSON.stringify(DEFAULT_VISITORS));
-        console.log("Database Initialized with Default Data");
-    }
-}
-// === MOCK DATABASE LOGIC (data.js) ===
-const STORAGE_KEY = 'sentrihawk_visitors';
+// --- 6. LOGIC & HELPERS ---
 
-function getVisitors() {
-    // 1. Read strictly from sessionStorage
-    const storedData = sessionStorage.getItem(STORAGE_KEY);
+// For the Guard Dashboard
+function getGuardVisitors() {
+    const storedData = sessionStorage.getItem(GUARD_STORAGE_KEY);
+    if (storedData) return JSON.parse(storedData);
     
-    if (storedData) {
-        return JSON.parse(storedData);
-    }
-    
-    // 2. If empty (like on a fresh tab), seed the demo data into sessionStorage
-    const defaultVisitors = [
-        { id: 'v101', name: 'Marcus Vance', company: 'Aegis Security', status: 'EXPECTED', isBlacklisted: false, isGhost: false },
-        { id: 'v102', name: 'Sarah Connor', company: 'Cyberdyne', status: 'EXPECTED', isBlacklisted: false, isGhost: false },
-        { id: 'v103', name: 'Unknown Entity', company: 'N/A', status: 'FLAGGED', isBlacklisted: true, isGhost: false }
-    ];
-    
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(defaultVisitors));
-    return defaultVisitors;
+    sessionStorage.setItem(GUARD_STORAGE_KEY, JSON.stringify(GUARD_VISITORS));
+    return GUARD_VISITORS;
 }
+
+// For the Tenant Dashboard
+function getTenantVisitors() {
+    const storedData = sessionStorage.getItem(TENANT_STORAGE_KEY);
+    if (storedData) return JSON.parse(storedData);
+    
+    sessionStorage.setItem(TENANT_STORAGE_KEY, JSON.stringify(TENANT_VISITORS));
+    return TENANT_VISITORS;
+}
+
+// Init Storage on load
+function initStorage() {
+    if (!sessionStorage.getItem(GUARD_STORAGE_KEY)) {
+        sessionStorage.setItem(GUARD_STORAGE_KEY, JSON.stringify(GUARD_VISITORS));
+    }
+    if (!sessionStorage.getItem(TENANT_STORAGE_KEY)) {
+        sessionStorage.setItem(TENANT_STORAGE_KEY, JSON.stringify(TENANT_VISITORS));
+    }
+}
+initStorage();
 
 function addVisitor(visitorData) {
-    let visitors = getVisitors();
+    let visitors = getGuardVisitors();
     
     const newVisitor = {
         id: 'v' + Date.now(), // Generate a unique ID based on timestamp
@@ -166,7 +202,7 @@ function addVisitor(visitorData) {
     visitors.push(newVisitor);
     
     // 3. Write strictly to sessionStorage
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(visitors));
+    sessionStorage.setItem(GUARD_STORAGE_KEY, JSON.stringify(visitors));
     
     return newVisitor;
 }

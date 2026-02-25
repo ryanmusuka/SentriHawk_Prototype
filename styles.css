@@ -41,16 +41,13 @@ body.dark-mode {
 /* ========================================= */
 /* --- UNIFIED FOCUS STATES (THE FIX) --- */
 /* ========================================= */
-/* Better, accessible focus states for ALL interactive elements */
-:focus-visible {
-    outline: 2px solid var(--primary-action);
-    outline-offset: 2px;
-    transition: outline-offset 0.2s ease;
-}
-
-/* Remove default focus only for mouse users, keep for keyboard (a11y best practice) */
-:focus:not(:focus-visible) {
-    outline: none;
+input:focus, 
+select:focus, 
+textarea:focus {
+    outline: none !important; 
+    border-color: var(--primary-action) !important; 
+    box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.25) !important; 
+    transition: all 0.2s ease-in-out;
 }
 
 body { 
@@ -171,7 +168,7 @@ nav { padding: 20px 0; }
 .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
 .stat-card { 
     background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; 
-    outline: 1px solid black; padding: 24px; border-top: 4px solid var(--primary-action); cursor: pointer; transition: all 0.2s ease;
+    outline: black; padding: 24px; border-top: 4px solid var(--primary-action); cursor: pointer; transition: all 0.2s ease;
 }
 .stat-card:hover { background-color: var(--hover-bg); transform: scale(1.02); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
 .stat-card:active { transform: scale(0.98); }
