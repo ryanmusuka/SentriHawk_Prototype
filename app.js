@@ -84,9 +84,6 @@ function routeUser() {
     const role = state.user.role;
     const tier = state.building?.tier || 1; 
 
-    // ==========================================
-    // 1. THE HARD RESET (Fixes State Leakage)
-    // ==========================================
     // Hide BOTH navbars first
     const navGuard = document.getElementById('nav-guard');
     const navTenant = document.getElementById('nav-tenant');
@@ -134,14 +131,16 @@ function routeUser() {
         if (navTenant) navTenant.classList.remove('hidden');
 
         // --- TIER FEATURE LOCK (TENANT: PRE-REGISTRATION) ---
+        // --- TIER FEATURE LOCK (TENANT: PRE-REGISTRATION) ---
         const preRegNavBtn = document.getElementById('nav-tenant-prereg'); 
-        if (preRegNavBtn) {
-            if (tier === 1) {
-                preRegNavBtn.classList.add('tier-locked');
-                console.warn("Security Alert: Ghost Protocol UI locked for Tier 1 tenant.");
-            } else {
-                preRegNavBtn.classList.remove('tier-locked');
-            }
+        const preRegDashBtn = document.getElementById('btn-dashboard-prereg'); // Grab the dashboard button
+        
+        if (tier === 1) {
+            if (preRegDashBtn) preRegDashBtn.classList.add('hidden'); // Hide the dashboard button
+            console.warn("Security Alert: Ghost Protocol UI locked for Tier 1 tenant.");
+        } else {
+            if (preRegNavBtn) preRegNavBtn.classList.remove('tier-locked');
+            if (preRegDashBtn) preRegDashBtn.classList.remove('hidden'); // Show the dashboard button
         }
 
         // Switch to the tenant dashboard and pass the first nav item to highlight it
@@ -716,7 +715,6 @@ function toggleCustomCalendar(e) {
     }
 }
 
-// THE FIX: Close calendar when clicking anywhere outside of it
 document.addEventListener('click', function(event) {
     const wrapper = document.getElementById('custom-date-wrapper');
     const cal = document.getElementById('custom-calendar-dropdown');
@@ -1305,7 +1303,6 @@ function loadSavedTheme() {
  */
 function switchTenantView(viewId, navElement = null) {
     // 1. UI Feedback: Update the active navigation link
-    // Trade-off: Querying the DOM is slow, but for a small navbar, O(N) is perfectly fine.
     if (navElement) {
         const navItems = document.querySelectorAll('#nav-tenant .nav-item');
         navItems.forEach(item => item.classList.remove('active'));
@@ -1313,13 +1310,13 @@ function switchTenantView(viewId, navElement = null) {
     }
 
     // 2. State Cleanup: Hide all possible Tenant-specific views
-    // We maintain a strict array of valid views to prevent scope leak.
     const allTenantViews = [
         'tenant-dashboard', 
         'tenant-pre-reg', 
         'tenant-history', 
         'tenant-employees',
-        'settings-view' // Shared with guard, but context changes
+        'settings-view',
+        'tenant-calendar-view' 
     ];
     
     allTenantViews.forEach(id => {
@@ -1330,21 +1327,18 @@ function switchTenantView(viewId, navElement = null) {
         }
     });
 
-    // 3. View Activation: Show the target view (O(1) DOM lookup)
+    // 3. View Activation: Show the target view
     const targetView = document.getElementById(viewId);
     if (targetView) {
         targetView.classList.remove('view-hidden');
         targetView.classList.add('view-active');
         console.log(`SentriHawk Log: Switched to Tenant View [${viewId}]`);
     } else {
-        // Security/Debugging: Catch if we pass a bad ID
         console.warn(`SentriHawk Warning: Attempted to route to non-existent view: ${viewId}`);
         return; 
     }
 
     // 4. View-Specific Logic (Controller Layer)
-    // Trigger data fetching or UI resets based on the view selected.
-    // We use typeof checks to prevent crashes since we haven't built these functions yet.
     switch(viewId) {
         case 'tenant-dashboard':
             if (typeof updateTenantStats === 'function') {
@@ -1360,8 +1354,6 @@ function switchTenantView(viewId, navElement = null) {
             break;
 
         case 'tenant-history':
-            // Security Note: In a real backend, this request MUST include a JWT token
-            // so the server enforces Row-Level Security (RLS) to only return THIS tenant's data.
             if (typeof renderTenantHistory === 'function') {
                 renderTenantHistory();
             }
@@ -1370,6 +1362,12 @@ function switchTenantView(viewId, navElement = null) {
         case 'tenant-employees':
             if (typeof loadEmployeeDirectory === 'function') {
                 loadEmployeeDirectory();
+            }
+            break;
+            
+        case 'calendar-view': // <-- ADDED: Call the render function exactly when opened
+            if (typeof renderMainCalendar === 'function') {
+                renderMainCalendar();
             }
             break;
     }
@@ -1482,3 +1480,75 @@ function populateTenantDashboard(filter = 'ALL') {
 function setTenantFilter(filterType) {
     populateTenantDashboard(filterType);
 }
+// === FULL PAGE CALENDAR ENGINE ===
+let mainCalDate = new Date(); 
+let currentViewMode = 'month'; 
+
+function changeMainMonth(offset) {
+    mainCalDate.setMonth(mainCalDate.getMonth() + offset);
+    renderMainCalendar();
+}
+
+function resetMainToToday() {
+    mainCalDate = new Date();
+    renderMainCalendar();
+}
+
+// Passed the button element as 'btn' to avoid browser event bugs
+function setCalView(viewType, btn) {
+    currentViewMode = viewType;
+    
+    // Manage active states
+    const btns = document.querySelectorAll('.cal-seg-btn');
+    btns.forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    
+    if(viewType === 'month') {
+        renderMainCalendar();
+    } else {
+        document.getElementById('tenant-calendar-grid').innerHTML = 
+            `<div style="grid-column: span 7; padding: 20px; text-align: center; color: var(--text-muted); background: var(--bg-card); display: flex; align-items: center; justify-content: center;">${viewType.charAt(0).toUpperCase() + viewType.slice(1)} view coming soon!</div>`;
+    }
+}
+
+function renderMainCalendar() {
+    const title = document.getElementById('main-cal-title');
+    const grid = document.getElementById('tenant-calendar-grid'); 
+    
+    if (!title || !grid) {
+        console.error("SentriHawk Error: Could not find calendar title or grid elements.");
+        return;
+    }
+    
+    title.innerText = mainCalDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    grid.innerHTML = ''; // Clear out the grid
+    
+    const year = mainCalDate.getFullYear();
+    const month = mainCalDate.getMonth();
+    
+    let firstDay = new Date(year, month, 1).getDay();
+    firstDay = firstDay === 0 ? 6 : firstDay - 1; 
+    
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const today = new Date(); 
+    
+    // 1. Draw empty padding days
+    for (let i = 0; i < firstDay; i++) {
+        grid.innerHTML += `<div class="main-cal-day empty"></div>`;
+    }
+    
+    // 2. Draw actual month days
+    for (let d = 1; d <= daysInMonth; d++) {
+        const isToday = (d === today.getDate() && month === today.getMonth() && year === today.getFullYear());
+        const displayDay = isToday ? `<span class="today-circle">${d}</span>` : d;
+        
+        grid.innerHTML += `
+            <div class="main-cal-day" onclick="alert('Clicked on ${month + 1}/${d}/${year}')">
+                <span class="cal-day-number">${displayDay}</span>
+            </div>
+        `;
+    }
+}
+
+// CALL IT IMMEDIATELY so it isn't a blank box on refresh
+renderMainCalendar();

@@ -68,7 +68,7 @@
 
             <nav id="nav-tenant" class="hidden">
                 <a href="#" class="nav-item active" onclick="switchTenantView('tenant-dashboard', this)">Overview</a>
-                <a href="#" class="nav-item" onclick="switchTenantView('tenant-calendar', this)">Calendar</a>
+                <a href="#" class="nav-item" onclick="switchTenantView('tenant-calendar-view', this)">Calendar</a>
                 <a href="#" id="nav-tenant-prereg" class="nav-item" onclick="switchTenantView('tenant-pre-reg', this)">Pre-Registration</a>
                 <a href="#" class="nav-item" onclick="switchTenantView('tenant-history', this)">History</a>
                 <a href="#" class="nav-item" onclick="switchTenantView('tenant-deliveries', this)">Deliveries</a>
@@ -435,50 +435,79 @@
         <div id="role-specific-card" class="settings-card">
             </div>
 
-    </div>
-</div>
-
-            <div id="tenant-dashboard" class="sub-view view-hidden">
-    <header class="page-header">
-        <h2>Tenant Overview</h2>
-        <button class="btn-primary" onclick="switchTenantView('tenant-pre-reg')">+ VIP Pre-Registration</button>
-    </header>
-
-    <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
-        <div class="stat-card" style="cursor: pointer;" onclick="setTenantFilter('EXPECTED')">
-            <p class="stat-label">Expected Today</p>
-            <h3 class="stat-value" id="tenant-stat-expected">0</h3> 
-        </div>
-        <div class="stat-card" style="cursor: pointer;" onclick="setTenantFilter('ON_SITE')">
-             <p class="stat-label">In Building</p>
-             <h3 class="stat-value" id="tenant-stat-onsite">0</h3> 
-        </div>
-        <div class="stat-card" style="cursor: pointer;" onclick="setTenantFilter('VIP')">
-             <p class="stat-label">VIPs Arriving</p>
-             <h3 class="stat-value" id="tenant-stat-vip">0</h3> 
-        </div>
-        <div class="stat-card" style="cursor: pointer; border-left: 4px solid #ef4444;" onclick="setTenantFilter('BLACKLIST')">
-             <p class="stat-label">Blacklist Matches</p>
-             <h3 class="stat-value text-danger" id="tenant-stat-blacklist">0</h3> 
         </div>
     </div>
 
-    <div class="card data-table-card">
-        <h3 id="tenant-table-title" style="cursor: pointer; display: inline-block;">Recent Activity</h3>
-        <span onclick="setTenantFilter('ALL')" style="float: right; color: var(--primary-action); font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-top: 5px;">View All Activity</span>
-        <table>
-            <thead>
-                <tr>
-                    <th>Visitor Name</th>
-                    <th>Status</th>
-                    <th>Time In</th>
-                    <th>Time Out</th>
-                </tr>
-            </thead>
-            <tbody id="tenant-overview-table">
-                </tbody>
-        </table>
+    <div id="tenant-dashboard" class="sub-view view-hidden">
+        <header class="page-header">
+            <h2>Tenant Overview</h2>
+            <button id="btn-dashboard-prereg" class="btn-primary" onclick="switchTenantView('tenant-pre-reg')">+ VIP Pre-Registration</button>
+        </header>
+
+        <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="stat-card" style="cursor: pointer;" onclick="setTenantFilter('EXPECTED')">
+                <p class="stat-label">Expected Today</p>
+                <h3 class="stat-value" id="tenant-stat-expected">0</h3> 
+            </div>
+            <div class="stat-card" style="cursor: pointer;" onclick="setTenantFilter('ON_SITE')">
+                <p class="stat-label">In Building</p>
+                <h3 class="stat-value" id="tenant-stat-onsite">0</h3> 
+            </div>
+            <div class="stat-card" style="cursor: pointer;" onclick="setTenantFilter('VIP')">
+                <p class="stat-label">VIPs Arriving</p>
+                <h3 class="stat-value" id="tenant-stat-vip">0</h3> 
+            </div>
+            <div class="stat-card" style="cursor: pointer; border-left: 4px solid #ef4444;" onclick="setTenantFilter('BLACKLIST')">
+                <p class="stat-label">Blacklist Matches</p>
+                <h3 class="stat-value text-danger" id="tenant-stat-blacklist">0</h3> 
+            </div>
+        </div>
+
+        <div class="card data-table-card">
+            <h3 id="tenant-table-title" style="cursor: pointer; display: inline-block;">Recent Activity</h3>
+            <span onclick="setTenantFilter('ALL')" style="float: right; color: var(--primary-action); font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-top: 5px;">View All Activity</span>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Visitor Name</th>
+                        <th>Status</th>
+                        <th>Time In</th>
+                        <th>Time Out</th>
+                    </tr>
+                </thead>
+                <tbody id="tenant-overview-table">
+                    </tbody>
+            </table>
+        </div>
     </div>
+<div id="tenant-calendar-view" class="cal-container">
+    
+    <div class="cal-header-row">
+        <div class="cal-title-wrapper">
+            <h2 id="main-cal-title" class="cal-obsidian-heading">February 2026</h2>
+        </div>
+
+        <div class="cal-segment-control">
+            <button class="cal-seg-btn" onclick="setCalView('day')">Day</button>
+            <button class="cal-seg-btn" onclick="setCalView('week')">Week</button>
+            <button class="cal-seg-btn active" onclick="setCalView('month')">Month</button>
+            <button class="cal-seg-btn" onclick="setCalView('year')">Year</button>
+        </div>
+
+        <div class="cal-nav-wrapper">
+            <button class="cal-nav-btn" onclick="changeMainMonth(-1)">&#10094;</button>
+            <button class="cal-nav-btn" onclick="resetMainToToday()">Today</button>
+            <button class="cal-nav-btn" onclick="changeMainMonth(1)">&#10095;</button>
+        </div>
+    </div>
+
+    <div class="cal-weekdays">
+        <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+    </div>
+
+    <div id="tenant-calendar-grid" class="cal-grid">
+        </div>
+
 </div>
 
         </main>
