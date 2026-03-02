@@ -531,7 +531,7 @@ function verifyVisitor(e) {
         });
     }
     
-    alert(`Access Granted. ${rawName} has been securely logged.`);
+    alert(`Success. ${rawName} has been securely logged.`);
     
     // Clear form inputs
     document.getElementById('v-name').value = '';
@@ -1313,8 +1313,9 @@ function switchTenantView(viewId, navElement = null) {
     const allTenantViews = [
         'tenant-dashboard', 
         'tenant-pre-reg', 
-        'tenant-history', 
-        'tenant-employees',
+        'tenant-history',
+        'tenant-deliveries',
+        'tenant-communicate',
         'settings-view',
         'tenant-calendar-view' 
     ];
@@ -1347,7 +1348,20 @@ function switchTenantView(viewId, navElement = null) {
             break;
             
         case 'tenant-pre-reg':
-            console.info("Ghost Protocol: Ready for secure VIP input.");
+            console.info("Pre-Registration View Active.");
+            
+            // --- TIER CHECK LOGIC ---
+            const currentTenantTier = state.building?.tier || 1;
+            
+            const vipButton = document.getElementById('btn-vip-register');
+            if (vipButton) {
+                if (currentTenantTier >= 2) {
+                    vipButton.style.display = ''; 
+                } else {
+                    vipButton.style.display = 'none'; 
+                }
+            }
+
             if (typeof clearPreRegForm === 'function') {
                 clearPreRegForm();
             }
@@ -1365,7 +1379,7 @@ function switchTenantView(viewId, navElement = null) {
             }
             break;
             
-        case 'calendar-view': // <-- ADDED: Call the render function exactly when opened
+        case 'calendar-view': 
             if (typeof renderMainCalendar === 'function') {
                 renderMainCalendar();
             }
@@ -1552,3 +1566,78 @@ function renderMainCalendar() {
 
 // CALL IT IMMEDIATELY so it isn't a blank box on refresh
 renderMainCalendar();
+
+function tenantVisitorReg(e) {
+    e.preventDefault();
+    
+    // 1. Capture inputs from the Tenant Pre-Reg Form
+    const rawName = document.getElementById('pre-v-name').value;
+    const docId = document.getElementById('pre-v-id').value;
+    const contact = document.getElementById('pre-v-contact').value;
+    const org = document.getElementById('pre-v-org').value || "N/A";
+    
+    const vrnElement = document.getElementById('pre-v-vehicle');
+    const vrn = vrnElement ? vrnElement.value : "N/A";
+    const searchName = rawName.toLowerCase();
+    
+    // 2. Silent Alarm Check
+    if (searchName.includes("bad") || searchName.includes("restricted") || searchName.includes("banned")) {
+        const banner = document.getElementById('silent-alarm-banner');
+        if(banner) {
+            banner.classList.remove('hidden');
+            setTimeout(() => banner.classList.add('hidden'), 5000);
+        } else {
+            alert("⚠ RESTRICTED ENTITY DETECTED. CANNOT PROCEED.");
+        }
+        return; 
+    } 
+    
+    // 3. Get Active Tenant securely from your state
+    if (!state || !state.user || !state.user.username) {
+        console.error("Security Fault: No Tenant ID found in active state.");
+        return;
+    }
+    const tenantId = state.user.username; 
+    
+    // 4. Fetch existing visitors using YOUR perfectly working function
+    let visitors = getTenantVisitors();
+    
+    let todayDate = new Date().toISOString().split('T')[0];
+
+    // 5. Create new visitor record 
+    const newVisitor = {
+        id: 'v' + Date.now().toString().slice(-6), 
+        name: rawName,
+        document_id: docId, 
+        contact: contact,
+        company: org,
+        vrn: vrn,
+        destination: tenantId, // Crucial: assigns to the logged-in tenant
+        status: 'EXPECTED', 
+        isVIP: false,       
+        isBlacklisted: false,
+        timeIn: null,
+        timeOut: null,
+        date: todayDate
+    };
+
+    // 6. Push to array and save to storage using YOUR exact storage key
+    visitors.push(newVisitor);
+    
+    // Assuming TENANT_STORAGE_KEY is available in this scope. 
+    // If it's not, you might need to use the exact string value it represents.
+    sessionStorage.setItem(TENANT_STORAGE_KEY, JSON.stringify(visitors));
+    
+    alert(`Success. ${rawName} has been pre-registered and is now EXPECTED.`);
+    
+    // 7. Clear form inputs
+    document.getElementById('pre-v-name').value = '';
+    document.getElementById('pre-v-id').value = '';
+    document.getElementById('pre-v-contact').value = '';
+    document.getElementById('pre-v-org').value = '';
+    if (vrnElement) vrnElement.value = '';
+    
+    // 8. Route back to dashboard and update UI with YOUR function
+    switchTenantView('tenant-dashboard'); 
+    populateTenantDashboard('ALL'); 
+}

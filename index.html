@@ -173,13 +173,14 @@
                             </div>
                             
                             <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-                                <button type="button" id="btn-back-to-scan" class="btn-alt" style="flex: 1; margin-top: 0;" onclick="toggleRegMode('scan')">← Back to Scan</button>
+                                <button type="button" id="btn-back-to-scan" class="btn-secondary" style="flex: 1; margin-top: 0;" onclick="toggleRegMode('scan')">← Back to Scan</button>
                                 <button type="submit" class="btn-primary" style="flex: 1; margin-top: 0;">VERIFY & ADMIT</button>
                             </div>
                         </form>
                     </div>
                 </div>
             </div>
+
           <div id="guard-history" class="view-hidden">
     
     <div id="history-main-list">
@@ -281,7 +282,7 @@
         </div>
     </div>
 
-</div>
+        </div>
 
 <div id="guard-deliveries" class="sub-view view-hidden">
     <header class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
@@ -436,78 +437,127 @@
             </div>
 
         </div>
-    </div>
+        </div>
 
-    <div id="tenant-dashboard" class="sub-view view-hidden">
-        <header class="page-header">
-            <h2>Tenant Overview</h2>
-            <button id="btn-dashboard-prereg" class="btn-primary" onclick="switchTenantView('tenant-pre-reg')">+ VIP Pre-Registration</button>
-        </header>
+        <div id="tenant-dashboard" class="sub-view view-hidden">
+            <header class="page-header">
+                <h2>Tenant Overview</h2>
+                <button id="btn-dashboard-prereg" class="btn-primary" onclick="switchTenantView('tenant-pre-reg')">+ VIP Pre-Registration</button>
+            </header>
 
-        <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
-            <div class="stat-card" style="cursor: pointer;" onclick="setTenantFilter('EXPECTED')">
-                <p class="stat-label">Expected Today</p>
-                <h3 class="stat-value" id="tenant-stat-expected">0</h3> 
+            <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+                <div class="stat-card" style="cursor: pointer;" onclick="setTenantFilter('EXPECTED')">
+                    <p class="stat-label">Expected Today</p>
+                    <h3 class="stat-value" id="tenant-stat-expected">0</h3> 
+                </div>
+                <div class="stat-card" style="cursor: pointer;" onclick="setTenantFilter('ON_SITE')">
+                    <p class="stat-label">In Building</p>
+                    <h3 class="stat-value" id="tenant-stat-onsite">0</h3> 
+                </div>
+                <div class="stat-card" style="cursor: pointer;" onclick="setTenantFilter('VIP')">
+                    <p class="stat-label">VIPs Arriving</p>
+                    <h3 class="stat-value" id="tenant-stat-vip">0</h3> 
+                </div>
+                <div class="stat-card" style="cursor: pointer; border-left: 4px solid #ef4444;" onclick="setTenantFilter('BLACKLIST')">
+                    <p class="stat-label">Blacklist Matches</p>
+                    <h3 class="stat-value text-danger" id="tenant-stat-blacklist">0</h3> 
+                </div>
             </div>
-            <div class="stat-card" style="cursor: pointer;" onclick="setTenantFilter('ON_SITE')">
-                <p class="stat-label">In Building</p>
-                <h3 class="stat-value" id="tenant-stat-onsite">0</h3> 
-            </div>
-            <div class="stat-card" style="cursor: pointer;" onclick="setTenantFilter('VIP')">
-                <p class="stat-label">VIPs Arriving</p>
-                <h3 class="stat-value" id="tenant-stat-vip">0</h3> 
-            </div>
-            <div class="stat-card" style="cursor: pointer; border-left: 4px solid #ef4444;" onclick="setTenantFilter('BLACKLIST')">
-                <p class="stat-label">Blacklist Matches</p>
-                <h3 class="stat-value text-danger" id="tenant-stat-blacklist">0</h3> 
+
+            <div class="card data-table-card">
+                <h3 id="tenant-table-title" style="cursor: pointer; display: inline-block;">Recent Activity</h3>
+                <span onclick="setTenantFilter('ALL')" style="float: right; color: var(--primary-action); font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-top: 5px;">View All Activity</span>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Visitor Name</th>
+                            <th>Status</th>
+                            <th>Time In</th>
+                            <th>Time Out</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tenant-overview-table">
+                        </tbody>
+                </table>
             </div>
         </div>
 
-        <div class="card data-table-card">
-            <h3 id="tenant-table-title" style="cursor: pointer; display: inline-block;">Recent Activity</h3>
-            <span onclick="setTenantFilter('ALL')" style="float: right; color: var(--primary-action); font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-top: 5px;">View All Activity</span>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Visitor Name</th>
-                        <th>Status</th>
-                        <th>Time In</th>
-                        <th>Time Out</th>
-                    </tr>
-                </thead>
-                <tbody id="tenant-overview-table">
-                    </tbody>
-            </table>
+        <div id="tenant-calendar-view" class="sub-view view-hidden cal-container">
+            
+            <div class="cal-header-row">
+                <div class="cal-title-wrapper">
+                    <h2 id="main-cal-title" class="cal-obsidian-heading">February 2026</h2>
+                </div>
+
+                <div class="cal-segment-control">
+                    <button class="cal-seg-btn" onclick="setCalView('day')">Day</button>
+                    <button class="cal-seg-btn" onclick="setCalView('week')">Week</button>
+                    <button class="cal-seg-btn active" onclick="setCalView('month')">Month</button>
+                    <button class="cal-seg-btn" onclick="setCalView('year')">Year</button>
+                </div>
+
+                <div class="cal-nav-wrapper">
+                    <button class="cal-nav-btn" onclick="changeMainMonth(-1)">&#10094;</button>
+                    <button class="cal-nav-btn" onclick="resetMainToToday()">Today</button>
+                    <button class="cal-nav-btn" onclick="changeMainMonth(1)">&#10095;</button>
+                </div>
+            </div>
+
+            <div class="cal-weekdays">
+                <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+            </div>
+
+            <div id="tenant-calendar-grid" class="cal-grid">
+                </div>
+
         </div>
-    </div>
-<div id="tenant-calendar-view" class="cal-container">
+
+        <div id="tenant-pre-reg" class="sub-view view-hidden">
+    <header class="page-header flex-header">
+        <h2>Visitor Pre-Registration</h2>
+        <button class="btn-secondary" onclick="switchTenantView('tenant-dashboard')">← Back to overview</button>
+    </header>
     
-    <div class="cal-header-row">
-        <div class="cal-title-wrapper">
-            <h2 id="main-cal-title" class="cal-obsidian-heading">February 2026</h2>
-        </div>
-
-        <div class="cal-segment-control">
-            <button class="cal-seg-btn" onclick="setCalView('day')">Day</button>
-            <button class="cal-seg-btn" onclick="setCalView('week')">Week</button>
-            <button class="cal-seg-btn active" onclick="setCalView('month')">Month</button>
-            <button class="cal-seg-btn" onclick="setCalView('year')">Year</button>
-        </div>
-
-        <div class="cal-nav-wrapper">
-            <button class="cal-nav-btn" onclick="changeMainMonth(-1)">&#10094;</button>
-            <button class="cal-nav-btn" onclick="resetMainToToday()">Today</button>
-            <button class="cal-nav-btn" onclick="changeMainMonth(1)">&#10095;</button>
-        </div>
+    <div id="silent-alarm-banner" class="alert-danger hidden">
+        ⚠ RESTRICTED ENTITY DETECTED. CANNOT PROCEED.
     </div>
 
-    <div class="cal-weekdays">
-        <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+    <div class="card modal-dialog-lg" style="margin: 0 auto;">
+        <h3 class="modal-title mb-4">Manual Identity Entry</h3>
+        
+        <form onsubmit="tenantVisitorReg(event)">
+            <div class="input-group mt-3">
+                <label>Full name <span class="text-danger">*</span></label>
+                <input type="text" id="pre-v-name" class="modal-input" required>
+            </div>
+            
+            <div class="input-group mt-3">
+                <label>ID number <span class="text-danger">*</span></label>
+                <input type="text" id="pre-v-id" class="modal-input" required>
+            </div>
+            
+            <div class="input-group mt-3">
+                <label>Contact (Phone / Email) <span class="text-danger">*</span></label>
+                <input type="text" id="pre-v-contact" class="modal-input" required>
+            </div>
+            
+            <div class="input-group mt-3">
+                <label>Organization / Company</label>
+                <input type="text" id="pre-v-org" class="modal-input">
+            </div>
+            
+             <div class="input-group mt-3">
+                <label>Vehicle Registration Number</label>
+                <input type="text" id="pre-v-vehicle" class="modal-input">
+            </div>
+            
+            
+            <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 2rem; width: 100%;">
+                <button type="button" id="btn-vip-register" class="btn-alt" style="display: none; flex: 1; margin-top: 0;" onclick="openGhostModal()">Register As VIP Guest</button>
+                <button type="submit" class="btn-primary" style="flex: 1; margin-top: 0;">VERIFY AND REGISTER</button>
+            </div>
+        </form>
     </div>
-
-    <div id="tenant-calendar-grid" class="cal-grid">
-        </div>
-
 </div>
 
         </main>
@@ -531,19 +581,22 @@
             <button id="btn-sign-out" class="btn-primary" style="width: 100%; display: none; background: var(--text-muted);" onclick="signVisitorOut()">SIGN OUT VISITOR</button>        
         </div>
     </div>
-    <div id="ghost-modal" class="modal hidden">
-        <div class="modal-content card">
-            <span class="close" onclick="closeGhostModal()">&times;</span>
-            <h2>Ghost protocol</h2>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Generate an untraceable VIP access token.</p>
-            <div class="input-group">
-                <label>Internal reference name</label>
-                <input type="text" id="ghost-name">
-            </div>
-            <button class="btn-primary" style="width: 100%;" onclick="generateGhostQR()">Generate token</button>
-            <div id="qrcode" style="margin-top: 1.5rem; display: flex; justify-content: center;"></div>
+
+    <div id="ghost-modal" class="modal hidden overlay-dark">
+    <div class="modal-content card modal-dialog-md relative-container">
+        <span class="close modal-close-abs" onclick="closeGhostModal()">&times;</span>
+        <h2 class="modal-title">Ghost protocol</h2>
+        <p class="modal-subtitle">Generate an untraceable VIP access token.</p>
+        
+        <div class="input-group mt-4">
+            <label>Internal reference name</label>
+            <input type="text" id="ghost-name" class="modal-input">
         </div>
+        
+        <button class="btn-primary btn-full-width mt-4" onclick="generateGhostQR()">Generate token</button>
+        <div id="qrcode" class="qr-container mt-4"></div>
     </div>
+</div>
 
     <div id="tenant-directory-modal" class="modal hidden backdrop-blur">
         <div class="modal-content tenant-modal card">

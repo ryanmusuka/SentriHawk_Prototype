@@ -157,7 +157,80 @@ const TENANT_VISITORS = [
     { id: 'v304', name: 'Justin Hammer', destination: 'tenant3', status: 'RESTRICTED', isVIP: false, isBlacklisted: true, timeIn: null, timeOut: null, date: todayStr }
 ];
 
-// --- 6. LOGIC & HELPERS ---
+const EXPECTED_VISITORS = [
+    {
+        id: "vis_004",
+        name: "Sarah Connor",
+        document_id: "ID-44021",
+        phone: "+1 555 8832",
+        company: "Tech Corp",
+        vrn: "XYZ-789",
+        isBlacklisted: false,
+        isGhost: false,
+        status: "EXPECTED",
+        visits: [
+            { date: "2026-02-04", time_in: null, time_out: null, destination: "Stark Logistics" }
+        ]
+    },
+    {
+        id: "vis_005",
+        name: "VIP GUEST", 
+        real_name: "Bruce Wayne",
+        document_id: "GOV-002",
+        phone: "Classified",
+        company: "Wayne Ent",
+        vrn: "BAT-1",
+        isBlacklisted: false,
+        isGhost: true, 
+        status: "EXPECTED",
+        visits: [
+            { date: "2026-02-12", time_in: null, time_out: null, destination: "Quantum Financial" }
+        ]
+    },
+    {
+        id: "vis_006",
+        name: "Clark Kent",
+        document_id: "ID-99322",
+        phone: "+1 555 0193",
+        company: "Daily Planet",
+        vrn: "KRY-001",
+        isBlacklisted: false,
+        isGhost: false,
+        status: "EXPECTED",
+        visits: [
+            { date: "2026-02-12", time_in: null, time_out: null, destination: "Aegis Security" }
+        ]
+    },
+    {
+        id: "vis_007",
+        name: "Diana Prince",
+        document_id: "ID-77321",
+        phone: "+1 555 0194",
+        company: "Antiquities Dept",
+        vrn: "THM-01",
+        isBlacklisted: false,
+        isGhost: false,
+        status: "EXPECTED",
+        visits: [
+            { date: "2026-02-25", time_in: null, time_out: null, destination: "Stark Logistics" }
+        ]
+    },
+    {
+        id: "vis_008",
+        name: "VIP GUEST", 
+        real_name: "Tony Stark",
+        document_id: "GOV-003",
+        phone: "Classified",
+        company: "Stark Ind",
+        vrn: "IM-01",
+        isBlacklisted: false,
+        isGhost: true, 
+        status: "EXPECTED",
+        visits: [
+            { date: "2026-02-28", time_in: null, time_out: null, destination: "Quantum Financial" }
+        ]
+    }
+];
 
 // --- 6. LOGIC & HELPERS ---
 
