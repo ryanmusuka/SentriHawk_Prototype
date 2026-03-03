@@ -87,15 +87,24 @@ function routeUser() {
     // Hide BOTH navbars first
     const navGuard = document.getElementById('nav-guard');
     const navTenant = document.getElementById('nav-tenant');
+    const navHOS = document.getElementById('nav-hos');
+
     if (navGuard) navGuard.classList.add('hidden');
     if (navTenant) navTenant.classList.add('hidden');
+    if (navHOS) navHOS.classList.add('hidden');
 
     // Combine all possible view IDs across all roles
     const allAppViews = [
+        // Guard Views
         'guard-dashboard', 'guard-registration', 'guard-history', 
         'guard-deliveries', 'guard-communicate', 
+        // Tenant Views
         'tenant-dashboard', 'tenant-pre-reg', 'tenant-history', 
-        'tenant-employees', 'tenant-communicate', 
+        'tenant-communicate', 'tenant-calendar-view', 'tenant-deliveries',
+        // HOS Views
+        'hos-dashboard', 'hos-analytics', 'hos-surveillance', 
+        'hos-watchlist', 'hos-history',
+        // Shared Views
         'settings-view'
     ];
     
@@ -111,6 +120,7 @@ function routeUser() {
     // ==========================================
     // 2. ROLE-BASED ROUTING (Rebuilding the UI)
     // ==========================================
+
     if (role === 'guard') {
         if (navGuard) navGuard.classList.remove('hidden');
 
@@ -127,10 +137,9 @@ function routeUser() {
         switchGuardView('guard-dashboard');
         if (typeof populateGuardDashboard === 'function') populateGuardDashboard();
 
-    } else if (role === 'tenant' || role === 'hos') {
+    } else if (role === 'tenant') {
         if (navTenant) navTenant.classList.remove('hidden');
 
-        // --- TIER FEATURE LOCK (TENANT: PRE-REGISTRATION) ---
         // --- TIER FEATURE LOCK (TENANT: PRE-REGISTRATION) ---
         const preRegNavBtn = document.getElementById('nav-tenant-prereg'); 
         const preRegDashBtn = document.getElementById('btn-dashboard-prereg'); // Grab the dashboard button
@@ -148,6 +157,24 @@ function routeUser() {
         switchTenantView('tenant-dashboard', firstTenantNavItem);
         
         if (typeof populateTenantDashboard === 'function') populateTenantDashboard();
+    } else if (role === 'hos') { 
+        if (navHOS) navHOS.classList.remove('hidden');
+
+        // Feature Flag: Analytics (Requires Tier 2 or 3)
+        const analyticsBtn = document.getElementById('nav-hos-analytics');
+        if (analyticsBtn) {
+            tier >= 2 ? analyticsBtn.classList.remove('tier-locked') : analyticsBtn.classList.add('tier-locked');
+        }
+
+        // Feature Flag: Live Surveillance (Requires Tier 3)
+        const surveillanceBtn = document.getElementById('nav-hos-surveillance');
+        if (surveillanceBtn) {
+            tier === 3 ? surveillanceBtn.classList.remove('tier-locked') : surveillanceBtn.classList.add('tier-locked');
+        }
+
+        // Initialize HOS View
+        const firstHOSNavItem = document.querySelector('#nav-hos .nav-item');
+        switchHOSView('hos-dashboard', firstHOSNavItem);
     }
 }
 
@@ -1362,8 +1389,7 @@ function switchTenantView(viewId, navElement = null) {
 }
 
 /**
- * Populates the Tenant Dashboard by filtering the global data to ONLY 
- * include visitors explicitly bound to the logged-in tenant.
+ * Populates the Tenant Dashboard 
  * @param {string} filter - 'ALL', 'EXPECTED', 'ON_SITE', 'VIP', 'BLACKLIST'
  */
 function populateTenantDashboard(filter = 'ALL') {
@@ -1900,8 +1926,204 @@ function sendTenantEmergency() {
     }
     
     // 1. Close the tenant modal
-    closeTenantEmergencyModal();
-    
-   
+    closeTenantEmergencyModal();  
 }
 
+// ==========================================
+// HOS VIEW CONTROLLER
+// ==========================================
+function switchHOSView(viewId, navElement = null) {
+    // 1. UI Feedback: Update active state on the sidebar
+    if (navElement) {
+        // Feature Flag Check: Prevent clicking if tier-locked
+        if (navElement.classList.contains('tier-locked')) {
+            alert("Upgrade Required: This feature is not available on your current building tier.");
+            return; 
+        }
+        document.querySelectorAll('#nav-hos .nav-item').forEach(item => item.classList.remove('active'));
+        navElement.classList.add('active');
+    }
+
+    // 2. State Cleanup: Hide all possible HOS-specific views
+    const allHOSViews = [
+        'hos-dashboard', 'hos-analytics', 'hos-surveillance', 
+        'hos-watchlist', 'hos-history', 'settings-view'
+    ];
+    
+    allHOSViews.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.add('view-hidden');
+            el.classList.remove('view-active');
+        }
+    });
+
+    // 3. View Activation
+    const targetView = document.getElementById(viewId);
+    if (targetView) {
+        targetView.classList.remove('view-hidden');
+        targetView.classList.add('view-active');
+    }
+
+    // 4. Data Routing
+    switch(viewId) {
+        case 'hos-dashboard':
+            renderHOSDashboard(); 
+            break;
+        case 'hos-analytics':
+            // renderHOSAnalytics(); // Will build later
+            break;
+        case 'hos-surveillance':
+            // renderHOSSurveillance(); // Will build later
+            break;
+        case 'hos-watchlist':
+            // renderHOSWatchlist(); // Will build later
+            break;
+        case 'hos-history':
+            // renderHOSHistory(); // Will build later
+            break;
+    }
+}
+
+// === HOS DASHBOARD STATE ===
+let currentHOSFilter = 'ALL';
+
+function setHOSFilter(filter) {
+    currentHOSFilter = filter;
+    
+    // Optional: Update the Activity Feed Title dynamically
+    const feedTitle = document.getElementById('hos-feed-title'); // Add this ID to your HTML <h3> if you want it to change
+    if (feedTitle) {
+        if (filter === 'EXPECTED') feedTitle.innerText = 'Expected Arrivals Feed';
+        else if (filter === 'ON_SITE') feedTitle.innerText = 'On-Premises Feed';
+        else if (filter === 'INCIDENTS') feedTitle.innerText = 'Security Alerts Feed';
+        else feedTitle.innerText = 'Live Activity Feed';
+    }
+    
+    renderHOSDashboard(); // Redraw with the new filter
+}
+
+function renderHOSDashboard() {
+    console.log("Rendering HOS Dashboard...");
+    
+    const tierDisplay = document.getElementById('hos-tier-display');
+    const tier = state.building?.tier || 1;
+    if (tierDisplay) tierDisplay.textContent = tier;
+
+    // SINGLE SOURCE OF TRUTH: Fetch the exact same data the Guard uses
+    const visitors = getGuardVisitors(); 
+    
+    // --- 1. THE MATH ENGINE (O(N) Complexity) ---
+    let expectedCount = 0;
+    let onSiteCount = 0;
+    let incidentCount = 0;
+
+    visitors.forEach(v => {
+        const currentStatus = v.status || (v.isBlacklisted ? 'FLAGGED' : 'EXPECTED');
+        
+        if (currentStatus === 'EXPECTED') expectedCount++;
+        if (currentStatus === 'ON SITE' || currentStatus === 'ON_SITE') onSiteCount++;
+        
+        // Security logic: Any blacklisted or restricted entity is an alert
+        if (v.isBlacklisted || currentStatus === 'FLAGGED' || currentStatus === 'RESTRICTED') incidentCount++;
+    });
+
+    // Update KPI DOM Elements
+    const kpiActive = document.getElementById('hos-kpi-active');
+    const kpiExpected = document.getElementById('hos-kpi-expected');
+    const kpiAlerts = document.getElementById('hos-kpi-alerts');
+    
+    if (kpiActive) kpiActive.textContent = onSiteCount;
+    if (kpiExpected) kpiExpected.textContent = expectedCount;
+    if (kpiAlerts) kpiAlerts.textContent = incidentCount;
+
+    // --- 2. POPULATE LIVE ACTIVITY FEED (With Filtering) ---
+    const feedContainer = document.getElementById('hos-activity-feed');
+    if (feedContainer) {
+        feedContainer.innerHTML = ''; 
+        
+        let displayEvents = visitors.slice().reverse(); // Show newest first
+        
+        // Apply the active click filter from the KPIs
+        if (currentHOSFilter === 'EXPECTED') {
+            displayEvents = displayEvents.filter(v => (v.status || (v.isBlacklisted ? 'FLAGGED' : 'EXPECTED')) === 'EXPECTED');
+        } else if (currentHOSFilter === 'ON_SITE') {
+            displayEvents = displayEvents.filter(v => v.status === 'ON SITE' || v.status === 'ON_SITE');
+        } else if (currentHOSFilter === 'INCIDENTS') {
+            displayEvents = displayEvents.filter(v => v.isBlacklisted || v.status === 'FLAGGED');
+        }
+        
+        // Windowing: Only show top 15 to prevent DOM bloat
+        displayEvents = displayEvents.slice(0, 15);
+
+        if (displayEvents.length === 0) {
+            feedContainer.innerHTML = '<p style="color: var(--text-muted); text-align: center; margin-top: 20px;">No activity matches this filter.</p>';
+        } else {
+            displayEvents.forEach(visitor => {
+                const eventDiv = document.createElement('div');
+                eventDiv.style.cssText = "padding: 12px; border-bottom: 1px solid var(--border-color); display: flex; gap: 10px; align-items: start;";
+                
+                const currentStatus = visitor.status || (visitor.isBlacklisted ? 'FLAGGED' : 'EXPECTED');
+                
+                // Determine icon based on status
+                let icon = '🟢'; // Default / On Site
+                if (currentStatus === 'EXPECTED') icon = '🟡';
+                if (currentStatus === 'SIGNED_OUT' || currentStatus === 'CHECKED OUT') icon = '⚪';
+                if (visitor.isBlacklisted || currentStatus === 'FLAGGED') icon = '🔴';
+
+                // Format time string
+                const timeStr = visitor.timeIn || (visitor.visits && visitor.visits.length > 0 ? visitor.visits[visitor.visits.length - 1].time_in : 'Pending');
+                
+                // Security Note: Using textContent properties via template literal injection. 
+                // We ensure no raw HTML from the user input is executed.
+                eventDiv.innerHTML = `
+                    <div style="font-size: 1.2rem;">${icon}</div>
+                    <div>
+                        <div style="color: var(--text-main); font-weight: 600; font-size: 0.95rem;">
+                            ${visitor.isGhost ? "VIP GUEST" : (visitor.name || 'Unknown')} 
+                            <span style="font-weight: 400; font-size: 0.85rem; color: var(--text-muted);">is ${currentStatus.toLowerCase()}</span>
+                        </div>
+                        <div style="color: var(--text-muted); font-size: 0.8rem; margin-top: 4px;">
+                            Destination: ${visitor.company || 'Unknown'} • Time: ${timeStr}
+                        </div>
+                    </div>
+                `;
+                feedContainer.appendChild(eventDiv);
+            });
+        }
+    }
+    
+    // ==========================================
+    // 2. POPULATE PRIORITY QUEUE
+    // ==========================================
+    const queueContainer = document.getElementById('hos-priority-queue');
+    if (queueContainer) {
+        if (tier >= 3) {
+            queueContainer.innerHTML = `
+                <div style="padding: 15px; border-bottom: 1px solid var(--danger); background-color: rgba(239, 68, 68, 0.05);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="color: var(--danger); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.5px;">⚠️ ACL MATCH DETECTED</span>
+                        <span style="color: var(--text-muted); font-size: 0.75rem;">2 mins ago</span>
+                    </div>
+                    <div style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 10px;">
+                        Facial geometry match (98%) for <span style="font-weight: bold;">"Benjamin Wright"</span> at Main Lobby Camera 2.
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn-primary" style="background-color: var(--danger); border: none; padding: 5px 10px; font-size: 0.8rem;">DISPATCH GUARD</button>
+                        <button class="btn-primary" style="background-color: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 5px 10px; font-size: 0.8rem;">DISMISS</button>
+                    </div>
+                </div>
+            `;
+            // Also update the KPI alert counter at the top!
+            const kpiAlerts = document.getElementById('hos-kpi-alerts');
+            if (kpiAlerts) kpiAlerts.textContent = "1";
+        } else {
+            queueContainer.innerHTML = `
+                <div style="text-align: center; padding: 30px 10px;">
+                    <span style="font-size: 2rem; opacity: 0.5;">🛡️</span>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">No active threats detected.</p>
+                </div>
+            `;
+        }
+    }
+}
