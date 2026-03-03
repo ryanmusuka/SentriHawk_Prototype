@@ -1302,21 +1302,16 @@ function loadSavedTheme() {
  * @param {HTMLElement} navElement - The clicked anchor tag (for UI styling)
  */
 function switchTenantView(viewId, navElement = null) {
-    // 1. UI Feedback: Update the active navigation link
+    // 1. UI Feedback: Update active state
     if (navElement) {
-        const navItems = document.querySelectorAll('#nav-tenant .nav-item');
-        navItems.forEach(item => item.classList.remove('active'));
+        document.querySelectorAll('#nav-tenant .nav-item').forEach(item => item.classList.remove('active'));
         navElement.classList.add('active');
     }
 
     // 2. State Cleanup: Hide all possible Tenant-specific views
     const allTenantViews = [
-        'tenant-dashboard', 
-        'tenant-pre-reg', 
-        'tenant-history',
-        'tenant-deliveries',
-        'tenant-communicate',
-        'settings-view',
+        'tenant-dashboard', 'tenant-pre-reg', 'tenant-history',
+        'tenant-deliveries', 'tenant-communicate', 'settings-view',
         'tenant-calendar-view' 
     ];
     
@@ -1328,61 +1323,32 @@ function switchTenantView(viewId, navElement = null) {
         }
     });
 
-    // 3. View Activation: Show the target view
+    // 3. View Activation
     const targetView = document.getElementById(viewId);
     if (targetView) {
         targetView.classList.remove('view-hidden');
         targetView.classList.add('view-active');
-        console.log(`SentriHawk Log: Switched to Tenant View [${viewId}]`);
-    } else {
-        console.warn(`SentriHawk Warning: Attempted to route to non-existent view: ${viewId}`);
-        return; 
     }
 
-    // 4. View-Specific Logic (Controller Layer)
+    // 4. Controller Layer: Data Fetching & Rendering
     switch(viewId) {
         case 'tenant-dashboard':
-            if (typeof updateTenantStats === 'function') {
-                updateTenantStats(); 
-            }
+            if (typeof updateTenantStats === 'function') updateTenantStats(); 
             break;
             
         case 'tenant-pre-reg':
-            console.info("Pre-Registration View Active.");
-            
-            // --- TIER CHECK LOGIC ---
-            const currentTenantTier = state.building?.tier || 1;
-            
-            const vipButton = document.getElementById('btn-vip-register');
-            if (vipButton) {
-                if (currentTenantTier >= 2) {
-                    vipButton.style.display = ''; 
-                } else {
-                    vipButton.style.display = 'none'; 
-                }
-            }
-
-            if (typeof clearPreRegForm === 'function') {
-                clearPreRegForm();
-            }
+            // Feature Gating based on Tier
+            const tier = state.building?.tier || 1;
+            const vipBtn = document.getElementById('btn-vip-register');
+            if (vipBtn) vipBtn.style.display = tier >= 2 ? '' : 'none';
             break;
 
         case 'tenant-history':
-            if (typeof renderTenantHistory === 'function') {
-                renderTenantHistory();
-            }
+            renderTenantHistoryTable();
             break;
 
-        case 'tenant-employees':
-            if (typeof loadEmployeeDirectory === 'function') {
-                loadEmployeeDirectory();
-            }
-            break;
-            
-        case 'calendar-view': 
-            if (typeof renderMainCalendar === 'function') {
-                renderMainCalendar();
-            }
+        case 'tenant-calendar-view': 
+            if (typeof renderMainCalendar === 'function') renderMainCalendar();
             break;
     }
 }
@@ -1567,77 +1533,174 @@ function renderMainCalendar() {
 // CALL IT IMMEDIATELY so it isn't a blank box on refresh
 renderMainCalendar();
 
-function tenantVisitorReg(e) {
-    e.preventDefault();
+// === TENANT HISTORY STATE & ENGINE ===
+let tHistoryDate = new Date(); 
+let tCurrentCalDate = new Date(); 
+
+function changeTenantHistoryDate(offset) {
+    tHistoryDate.setDate(tHistoryDate.getDate() + offset);
+    updateTenantHistoryUI();
+}
+
+function updateTenantHistoryUI() {
+    const today = new Date();
+    const displayEl = document.getElementById('t-history-date-display');
     
-    // 1. Capture inputs from the Tenant Pre-Reg Form
-    const rawName = document.getElementById('pre-v-name').value;
-    const docId = document.getElementById('pre-v-id').value;
-    const contact = document.getElementById('pre-v-contact').value;
-    const org = document.getElementById('pre-v-org').value || "N/A";
+    if (tHistoryDate.toDateString() === today.toDateString()) {
+        displayEl.innerText = "Today";
+    } else {
+        displayEl.innerText = tHistoryDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
     
-    const vrnElement = document.getElementById('pre-v-vehicle');
-    const vrn = vrnElement ? vrnElement.value : "N/A";
-    const searchName = rawName.toLowerCase();
+    renderTenantHistoryTable();
+}
+
+function renderTenantHistoryTable() {
+    const tbody = document.getElementById('t-history-table-body');
+    if (!tbody) return; 
+    tbody.innerHTML = '';
     
-    // 2. Silent Alarm Check
-    if (searchName.includes("bad") || searchName.includes("restricted") || searchName.includes("banned")) {
-        const banner = document.getElementById('silent-alarm-banner');
-        if(banner) {
-            banner.classList.remove('hidden');
-            setTimeout(() => banner.classList.add('hidden'), 5000);
-        } else {
-            alert("⚠ RESTRICTED ENTITY DETECTED. CANNOT PROCEED.");
-        }
-        return; 
-    } 
+    const searchInput = document.getElementById('t-history-search');
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+    const targetDate = tHistoryDate.toISOString().split('T')[0];
+    const visitors = getGuardVisitors();
     
-    // 3. Get Active Tenant securely from your state
-    if (!state || !state.user || !state.user.username) {
-        console.error("Security Fault: No Tenant ID found in active state.");
+    const currentTenantId = state.user.username; // Security Scope
+    
+    let matches = visitors.filter(person => {
+        // 1. SEARCH FILTER
+        const matchSearch = person.name.toLowerCase().includes(searchTerm) || 
+                            (person.phone && person.phone.includes(searchTerm));
+                            
+        // 2. SECURITY & DATE FILTER: Did they visit THIS tenant on THIS date?
+        const hasValidVisit = person.visits && person.visits.some(visit => 
+            visit.date === targetDate && visit.destination === currentTenantId
+        );
+        
+        return matchSearch && hasValidVisit;
+    });
+    
+    // Update the UI counter
+    const countHeader = document.getElementById('t-history-total-count');
+    if (countHeader) {
+        const plural = matches.length === 1 ? '' : 's';
+        countHeader.innerText = `${matches.length} Visitor${plural}`;
+    }
+
+    if (matches.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 40px;">No records found for this date.</td></tr>`;
         return;
     }
-    const tenantId = state.user.username; 
-    
-    // 4. Fetch existing visitors using YOUR perfectly working function
-    let visitors = getTenantVisitors();
-    
-    let todayDate = new Date().toISOString().split('T')[0];
 
-    // 5. Create new visitor record 
-    const newVisitor = {
-        id: 'v' + Date.now().toString().slice(-6), 
-        name: rawName,
-        document_id: docId, 
-        contact: contact,
-        company: org,
-        vrn: vrn,
-        destination: tenantId, // Crucial: assigns to the logged-in tenant
-        status: 'EXPECTED', 
-        isVIP: false,       
-        isBlacklisted: false,
-        timeIn: null,
-        timeOut: null,
-        date: todayDate
-    };
+    matches.forEach(person => {
+        // Find the specific visit data for today to show time in/out
+        const todaysVisit = person.visits.find(v => v.date === targetDate && v.destination === currentTenantId) || {};
 
-    // 6. Push to array and save to storage using YOUR exact storage key
-    visitors.push(newVisitor);
+        tbody.innerHTML += `
+            <tr onclick="openTenantHistoryProfile('${person.id}')" style="cursor: pointer;">
+                <td>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div class="avatar-circle">${person.name.charAt(0)}</div>
+                        <strong>${person.name}</strong>
+                    </div>
+                </td>
+                <td>${person.document_id || 'N/A'}</td>
+                <td>${todaysVisit.time_in || '--:--'}</td>
+                <td>${todaysVisit.time_out || '--:--'}</td>
+            </tr>
+        `;
+    });
+}
+
+// === TENANT PROFILE VIEW ===
+function openTenantHistoryProfile(personId) {
+    const person = getGuardVisitors().find(v => v.id === personId);
+    if (!person) return;
     
-    // Assuming TENANT_STORAGE_KEY is available in this scope. 
-    // If it's not, you might need to use the exact string value it represents.
-    sessionStorage.setItem(TENANT_STORAGE_KEY, JSON.stringify(visitors));
+    document.getElementById('t-history-main-list').classList.add('hidden');
+    document.getElementById('t-history-profile-view').classList.remove('hidden');
     
-    alert(`Success. ${rawName} has been pre-registered and is now EXPECTED.`);
+    document.getElementById('t-hp-name').innerText = person.name;
+    document.getElementById('t-hp-contact').innerText = person.phone || 'N/A';
+    document.getElementById('t-hp-vrn').innerText = person.vrn || 'N/A';
+    document.getElementById('t-hp-id').innerText = person.document_id || 'N/A';
     
-    // 7. Clear form inputs
-    document.getElementById('pre-v-name').value = '';
-    document.getElementById('pre-v-id').value = '';
-    document.getElementById('pre-v-contact').value = '';
-    document.getElementById('pre-v-org').value = '';
-    if (vrnElement) vrnElement.value = '';
+    const visitsBody = document.getElementById('t-hp-visits-body');
+    visitsBody.innerHTML = '';
     
-    // 8. Route back to dashboard and update UI with YOUR function
-    switchTenantView('tenant-dashboard'); 
-    populateTenantDashboard('ALL'); 
+    // SECURITY FILTER: Only show visits related to this tenant!
+    const tenantVisits = [...(person.visits || [])]
+        .filter(visit => visit.destination === state.user.username)
+        .reverse();
+
+    tenantVisits.forEach(visit => {
+        visitsBody.innerHTML += `
+            <tr>
+                <td>${visit.date}</td>
+                <td>${visit.time_in || '-'}</td>
+                <td>${visit.time_out || '-'}</td>
+            </tr>
+        `;
+    });
+}
+
+function closeTenantHistoryProfile() {
+    document.getElementById('t-history-profile-view').classList.add('hidden');
+    document.getElementById('t-history-main-list').classList.remove('hidden');
+}
+
+// === TENANT CALENDAR ENGINE ===
+function toggleTenantCustomCalendar(e) {
+    if(e) e.stopPropagation(); 
+    const cal = document.getElementById('t-custom-calendar-dropdown');
+    cal.classList.toggle('hidden');
+    if (!cal.classList.contains('hidden')) {
+        tCurrentCalDate = new Date(tHistoryDate); 
+        renderTenantCalendar();
+    }
+}
+
+// Ensure clicking outside closes the tenant calendar
+document.addEventListener('click', function(event) {
+    const wrapper = document.getElementById('t-custom-date-wrapper');
+    const cal = document.getElementById('t-custom-calendar-dropdown');
+    if (wrapper && !wrapper.contains(event.target) && cal) {
+        cal.classList.add('hidden');
+    }
+});
+
+function changeTenantCalendarMonth(offset, e) {
+    if(e) e.stopPropagation(); 
+    tCurrentCalDate.setMonth(tCurrentCalDate.getMonth() + offset);
+    renderTenantCalendar();
+}
+
+function renderTenantCalendar() {
+    const monthYear = document.getElementById('t-calendar-month-year');
+    const grid = document.getElementById('t-calendar-days-grid');
+    
+    monthYear.innerText = tCurrentCalDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    grid.innerHTML = '';
+    
+    const year = tCurrentCalDate.getFullYear();
+    const month = tCurrentCalDate.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    for (let i = 0; i < firstDay; i++) {
+        grid.innerHTML += `<div class="calendar-day empty"></div>`;
+    }
+    
+    for (let d = 1; d <= daysInMonth; d++) {
+        const isSelected = (d === tHistoryDate.getDate() && month === tHistoryDate.getMonth() && year === tHistoryDate.getFullYear());
+        const selectedClass = isSelected ? 'selected' : '';
+        grid.innerHTML += `<div class="calendar-day ${selectedClass}" onclick="selectTenantCustomDate(${year}, ${month}, ${d}, event)">${d}</div>`;
+    }
+}
+
+function selectTenantCustomDate(year, month, day, e) {
+    if(e) e.stopPropagation();
+    tHistoryDate = new Date(year, month, day, 12, 0, 0); 
+    document.getElementById('t-custom-calendar-dropdown').classList.add('hidden');
+    updateTenantHistoryUI(); 
 }

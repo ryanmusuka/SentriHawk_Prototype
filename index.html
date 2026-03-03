@@ -558,6 +558,104 @@
             </div>
         </form>
     </div>
+        </div>
+        
+        <div id="tenant-history" class="sub-view view-hidden">
+    
+    <div id="t-history-main-list">
+        <div class="history-header" style="margin-bottom: 20px;">
+            <h2 id="t-history-total-count" style="font-size: 1.8rem; font-weight: 700;">0 Visitors</h2>
+        </div>
+        
+        <div class="history-controls-row">
+            
+            <div class="date-navigation">
+                <button class="date-btn" onclick="changeTenantHistoryDate(-1)">&#8249;</button>
+                <div class="date-picker-wrapper" id="t-custom-date-wrapper">
+                    <button class="date-btn main-date-btn" onclick="toggleTenantCustomCalendar(event)">
+                        <span id="t-history-date-display">Today</span>
+                        <span style="font-size: 10px; margin-left: 8px;">&#9660;</span>
+                    </button>
+                    
+                    <div id="t-custom-calendar-dropdown" class="hidden">
+                        <div class="calendar-header">
+                            <button class="cal-nav-btn" onclick="changeTenantCalendarMonth(-1, event)">&#8249;</button>
+                            <strong id="t-calendar-month-year">Month Year</strong>
+                            <button class="cal-nav-btn" onclick="changeTenantCalendarMonth(1, event)">&#8250;</button>
+                        </div>
+                        <div class="calendar-days-header">
+                            <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                        </div>
+                        <div id="t-calendar-days-grid" class="calendar-days-grid"></div>
+                    </div>
+                </div>
+                <button class="date-btn" onclick="changeTenantHistoryDate(1)">&#8250;</button>
+            </div>
+            
+            <div class="filter-actions">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="t-history-search" placeholder="Search my visitors..." oninput="renderTenantHistoryTable()">
+                </div>
+
+                <select class="filter-select" id="t-history-filter-vip" onchange="renderTenantHistoryTable()">
+                    <option value="ALL">All Visitors</option>
+                    <option value="VIP">VIP Visitors</option>
+                </select>
+
+                <select class="filter-select" id="t-history-filter-status" onchange="renderTenantHistoryTable()">
+                    <option value="ALL">All Statuses</option>
+                    <option value="SIGNED_IN">Currently signed in</option>
+                    <option value="SIGNED_OUT">Signed out</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="table-container" style="margin-top: 20px;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>NAME</th>
+                        <th>ID NUMBER</th>
+                        <th>TIME IN</th>
+                        <th>TIME OUT</th>
+                    </tr>
+                </thead>
+                <tbody id="t-history-table-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="t-history-profile-view" class="hidden">
+        <button class="btn-back" onclick="closeTenantHistoryProfile()" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1rem; margin-bottom: 20px; display: flex; align-items: center; gap: 5px;">
+            &#8592; Back to My History
+        </button>
+        
+        <div class="profile-header-card" style="background: var(--surface-light); padding: 25px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 30px;">
+            <h2 id="t-hp-name" style="margin-bottom: 15px; font-size: 2rem; color: var(--primary-action);">Name</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; color: var(--text-secondary);">
+                <p><strong>Contact:</strong> <span id="t-hp-contact" style="color: var(--text-main);"></span></p>
+                <p><strong>VRN:</strong> <span id="t-hp-vrn" style="color: var(--text-main);"></span></p>
+                <p><strong>ID Number:</strong> <span id="t-hp-id" style="color: var(--text-main);"></span></p>
+                </div>
+        </div>
+        
+        <h3 style="margin-bottom: 15px; font-weight: 600;">Visit Log</h3>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>DATE</th>
+                        <th>TIME IN</th>
+                        <th>TIME OUT</th>
+                    </tr>
+                </thead>
+                <tbody id="t-hp-visits-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
         </main>
