@@ -181,485 +181,582 @@
                 </div>
             </div>
 
-          <div id="guard-history" class="view-hidden">
-    
-    <div id="history-main-list">
-        <div class="history-header" style="margin-bottom: 20px;">
-            <h2 id="history-total-count" style="font-size: 1.8rem; font-weight: 700;">0 Visitors</h2>
-        </div>
+            <div id="guard-history" class="view-hidden">
         
-        <div class="history-controls-row">
-            
-            <div class="date-navigation">
-                <button class="date-btn" onclick="changeHistoryDate(-1)">&#8249;</button>
-                <div class="date-picker-wrapper" id="custom-date-wrapper">
-    <button class="date-btn main-date-btn" onclick="toggleCustomCalendar(event)">
-        <span id="history-date-display">Today</span>
-        <span style="font-size: 10px; margin-left: 8px;">&#9660;</span>
-    </button>
-    
-    <div id="custom-calendar-dropdown" class="hidden">
-        <div class="calendar-header">
-            <button class="cal-nav-btn" onclick="changeCalendarMonth(-1, event)">&#8249;</button>
-            <strong id="calendar-month-year">Month Year</strong>
-            <button class="cal-nav-btn" onclick="changeCalendarMonth(1, event)">&#8250;</button>
-        </div>
-        <div class="calendar-days-header">
-            <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
-        </div>
-        <div id="calendar-days-grid" class="calendar-days-grid">
-            </div>
-    </div>
-</div>
-                <button class="date-btn" onclick="changeHistoryDate(1)">&#8250;</button>
+        <div id="history-main-list">
+            <div class="history-header" style="margin-bottom: 20px;">
+                <h2 id="history-total-count" style="font-size: 1.8rem; font-weight: 700;">0 Visitors</h2>
             </div>
             
-            <div class="filter-actions">
-                <div class="search-box">
-                    <span class="search-icon">🔍</span>
-                    <input type="text" id="history-search" placeholder="Search..." oninput="renderHistoryTable()">
-                </div>
-
-                <select class="filter-select">
-                    <option>All Visitors</option>
-                    <option>VIP Visitors</option>
-                </select>
-
-                <select class="filter-select">
-                    <option>Currently signed in</option>
-                    <option>All Statuses</option>
-                    <option>Signed out</option>
-                </select>
-
-                </div>
-        </div>
-
-        <div class="table-container" style="margin-top: 20px;">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>NAME</th>
-                        <th>ID NUMBER</th>
-                        <th>ORGANIZATION</th>
-                        <th>LAST VISIT</th>
-                    </tr>
-                </thead>
-                <tbody id="history-table-body">
-                    </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div id="history-profile-view" class="hidden">
-        <button class="btn-back" onclick="closeHistoryProfile()" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1rem; margin-bottom: 20px; display: flex; align-items: center; gap: 5px;">
-            &#8592; Back to History
+            <div class="history-controls-row">
+                
+                <div class="date-navigation">
+                    <button class="date-btn" onclick="changeHistoryDate(-1)">&#8249;</button>
+                    <div class="date-picker-wrapper" id="custom-date-wrapper">
+        <button class="date-btn main-date-btn" onclick="toggleCustomCalendar(event)">
+            <span id="history-date-display">Today</span>
+            <span style="font-size: 10px; margin-left: 8px;">&#9660;</span>
         </button>
         
-        <div class="profile-header-card" style="background: var(--surface-light); padding: 25px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 30px;">
-            <h2 id="hp-name" style="margin-bottom: 15px; font-size: 2rem; color: var(--primary-action);">Name</h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; color: var(--text-secondary);">
-                <p><strong>Contact:</strong> <span id="hp-contact" style="color: var(--text-main);"></span></p>
-                <p><strong>VRN:</strong> <span id="hp-vrn" style="color: var(--text-main);"></span></p>
-                <p><strong>ID Number:</strong> <span id="hp-id" style="color: var(--text-main);"></span></p>
-                <p><strong>Organization:</strong> <span id="hp-org" style="color: var(--text-main);"></span></p>
+        <div id="custom-calendar-dropdown" class="hidden">
+            <div class="calendar-header">
+                <button class="cal-nav-btn" onclick="changeCalendarMonth(-1, event)">&#8249;</button>
+                <strong id="calendar-month-year">Month Year</strong>
+                <button class="cal-nav-btn" onclick="changeCalendarMonth(1, event)">&#8250;</button>
             </div>
-        </div>
-        
-        <h3 style="margin-bottom: 15px; font-weight: 600;">Visit Log</h3>
-        <div class="table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>DATE</th>
-                        <th>DESTINATION</th>
-                        <th>TIME IN</th>
-                        <th>TIME OUT</th>
-                    </tr>
-                </thead>
-                <tbody id="hp-visits-body">
-                    </tbody>
-            </table>
+            <div class="calendar-days-header">
+                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+            </div>
+            <div id="calendar-days-grid" class="calendar-days-grid">
+                </div>
         </div>
     </div>
-
-        </div>
-
-<div id="guard-deliveries" class="sub-view view-hidden">
-    <header class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-        <h2>Deliveries & Logistics</h2>
-        <button class="btn-primary" onclick="openLogPackageModal()">+ Log New Package</button>
-    </header>
-
-    <div class="card" style="display: flex; padding: 0; min-height: 60vh; overflow: hidden;">
-        
-        <div style="flex: 2; padding: 24px;">
-            <h3 style="margin-top: 0; margin-bottom: 16px; color: var(--text-main); font-size: 1.1rem;">
-                Awaiting Pickup
-            </h3>
-            
-            <table class="data-table" style="width: 100%; text-align: left; border-collapse: collapse;">
-                <thead>
-                    <tr style="color: var(--text-muted); font-size: 0.85rem; border-bottom: 2px solid var(--border-color);">
-                        <th style="padding: 12px 8px;">PACKAGE</th>
-                        <th style="padding: 12px 8px;">DESTINATION</th>
-                        <th style="padding: 12px 8px;">DATE DELIVERED</th>
-                    </tr>
-                </thead>
-                <tbody id="awaiting-pickup-list">
-                </tbody>
-            </table>
-        </div>
-
-        <div style="width: 2px; flex-shrink: 0; background-color: var(--primary-action); opacity: 0.8;"></div>
-
-        <div style="flex: 1; padding: 24px; background-color: var(--hover-bg);">
-            <h3 style="margin-top: 0; margin-bottom: 16px; color: var(--text-main); font-size: 1.1rem;">
-                Collected Today
-            </h3>
-            
-            <table class="data-table" style="width: 100%; text-align: left; border-collapse: collapse;">
-                <thead>
-                    <tr style="color: var(--text-muted); font-size: 0.85rem; border-bottom: 2px solid var(--border-color);">
-                        <th style="padding: 12px 8px;">PACKAGE</th>
-                        <th style="padding: 12px 8px;">COLLECTED BY</th>
-                        <th style="padding: 12px 8px;">TIME</th> </tr>
-                    </tr>
-                </thead>
-                <tbody id="collected-history-list">
-                </tbody>
-            </table>
-        </div>
-
-    </div>
-</div>
-
-            <div id="guard-communicate" class="sub-view view-hidden">
-    <header class="page-header">
-        <h2>Communicate</h2>
-    </header>
-    
-    <div class="comm-container">
-        <div class="comm-left-panel">
-            <div class="comm-list-header">
-                <button id="btn-emergency-broadcast" class="btn-emergency premium-feature" onclick="openEmergencyModal()">
-                    <span>⚠️</span> EMERGENCY BROADCAST
-                </button>
-               <input type="text" id="comm-search-bar" class="comm-search-input" placeholder="Search tenant..." oninput="filterTenants()">
-            </div>
-            
-            <div id="chat-tenant-list" class="chat-list-container">
+                    <button class="date-btn" onclick="changeHistoryDate(1)">&#8250;</button>
                 </div>
-        </div>
-
-        <div class="comm-right-panel">
-            <div class="comm-chat-header">
-                <div>
-                    <h3 id="active-chat-name" style="margin: 0; color: #1e293b; font-size: 1.1rem;">Select a chat</h3>
-                    <span id="active-chat-company" style="font-size: 0.8rem; color: #64748b; font-weight: 600;">---</span>
-                </div>
-                <button id="btn-call-tenant" class="btn-icon-blue premium-feature">📞</button>
-            </div>
-
-            <div id="chat-messages-area" class="comm-messages-area">
-                <div style="text-align: center; color: #94a3b8; margin: auto;">
-                    Select a tenant on the left to start messaging.
-                </div>
-            </div>
-
-            <div id="quick-replies-bar" class="comm-quick-replies premium-feature">
-                <button class="btn-quick-reply" onclick="sendQuickReply('Your visitor is waiting at the lobby.')">Visitor waiting</button>
-                <button class="btn-quick-reply" onclick="sendQuickReply('You have a package at the front desk.')">Package arrived</button>
-                <button class="btn-quick-reply" onclick="sendQuickReply('Please contact the front desk immediately.')">Contact desk</button>
-            </div>
-
-            <div class="comm-input-area">
-                <button id="btn-attach" class="btn-icon-blue premium-feature">📎</button>
-                <input type="text" id="chat-input-field" class="comm-input-field" placeholder="Type a message..." onkeypress="handleChatEnter(event)">
-                <button class="btn-send" onclick="sendChatMessage()">➤</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-           <div id="settings-view" class="sub-view view-hidden">
-    <header class="page-header">
-        <h2>Control Center</h2>
-    </header>
-
-    <div class="settings-wrapper">
-        
-        <div class="settings-card">
-            <h3>Appearance</h3>
-            <div class="setting-row">
-                <div class="setting-info">
-                    <div class="setting-text">
-                        <strong>Dark Mode</strong>
-                        <span>Switch between Light Mode and Obsidian Dark Mode.</span>
+                
+                <div class="filter-actions">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="history-search" placeholder="Search..." oninput="renderHistoryTable()">
                     </div>
-                </div>
-                <label class="switch">
-                    <input type="checkbox" id="setting-theme" onchange="toggleDarkMode()">
-                    <span class="slider"></span>
-                </label>
-            </div>
-        </div>
 
-        <div class="settings-card">
-            <h3>Alerts & Sound</h3>
-            <div class="setting-row">
-                <div class="setting-info">
-                    <div class="setting-text">
-                        <strong>Push Notifications</strong>
-                        <span>Master toggle for all SMS and app push alerts.</span>
+                    <select class="filter-select">
+                        <option>All Visitors</option>
+                        <option>VIP Visitors</option>
+                    </select>
+
+                    <select class="filter-select">
+                        <option>Currently signed in</option>
+                        <option>All Statuses</option>
+                        <option>Signed out</option>
+                    </select>
+
                     </div>
-                </div>
-                <label class="switch">
-                    <input type="checkbox" checked id="setting-notifs">
-                    <span class="slider"></span>
-                </label>
-            </div>
-            
-            <div class="setting-row">
-                <div class="setting-info">
-                    <div class="setting-text">
-                        <strong>Sound Effects</strong>
-                        <span>Play a chime for new visitors and messages.</span>
-                    </div>
-                </div>
-                <label class="switch">
-                    <input type="checkbox" checked id="setting-sound">
-                    <span class="slider"></span>
-                </label>
-            </div>
-        </div>
-
-        <div id="role-specific-card" class="settings-card">
             </div>
 
-        </div>
-        </div>
-
-        <div id="tenant-dashboard" class="sub-view view-hidden">
-            <header class="page-header">
-                <h2>Tenant Overview</h2>
-                <button id="btn-dashboard-prereg" class="btn-primary" onclick="switchTenantView('tenant-pre-reg')">+ VIP Pre-Registration</button>
-            </header>
-
-            <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
-                <div class="stat-card" style="cursor: pointer;" onclick="setTenantFilter('EXPECTED')">
-                    <p class="stat-label">Expected Today</p>
-                    <h3 class="stat-value" id="tenant-stat-expected">0</h3> 
-                </div>
-                <div class="stat-card" style="cursor: pointer;" onclick="setTenantFilter('ON_SITE')">
-                    <p class="stat-label">In Building</p>
-                    <h3 class="stat-value" id="tenant-stat-onsite">0</h3> 
-                </div>
-                <div class="stat-card" style="cursor: pointer;" onclick="setTenantFilter('VIP')">
-                    <p class="stat-label">VIPs Arriving</p>
-                    <h3 class="stat-value" id="tenant-stat-vip">0</h3> 
-                </div>
-                <div class="stat-card" style="cursor: pointer; border-left: 4px solid #ef4444;" onclick="setTenantFilter('BLACKLIST')">
-                    <p class="stat-label">Blacklist Matches</p>
-                    <h3 class="stat-value text-danger" id="tenant-stat-blacklist">0</h3> 
-                </div>
-            </div>
-
-            <div class="card data-table-card">
-                <h3 id="tenant-table-title" style="cursor: pointer; display: inline-block;">Recent Activity</h3>
-                <span onclick="setTenantFilter('ALL')" style="float: right; color: var(--primary-action); font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-top: 5px;">View All Activity</span>
-                <table>
+            <div class="table-container" style="margin-top: 20px;">
+                <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Visitor Name</th>
-                            <th>Status</th>
-                            <th>Time In</th>
-                            <th>Time Out</th>
+                            <th>NAME</th>
+                            <th>ID NUMBER</th>
+                            <th>ORGANIZATION</th>
+                            <th>LAST VISIT</th>
                         </tr>
                     </thead>
-                    <tbody id="tenant-overview-table">
+                    <tbody id="history-table-body">
                         </tbody>
                 </table>
             </div>
         </div>
 
-        <div id="tenant-calendar-view" class="sub-view view-hidden cal-container">
+        <div id="history-profile-view" class="hidden">
+            <button class="btn-back" onclick="closeHistoryProfile()" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1rem; margin-bottom: 20px; display: flex; align-items: center; gap: 5px;">
+                &#8592; Back to History
+            </button>
             
-            <div class="cal-header-row">
-                <div class="cal-title-wrapper">
-                    <h2 id="main-cal-title" class="cal-obsidian-heading">February 2026</h2>
-                </div>
-
-                <div class="cal-segment-control">
-                    <button class="cal-seg-btn" onclick="setCalView('day')">Day</button>
-                    <button class="cal-seg-btn" onclick="setCalView('week')">Week</button>
-                    <button class="cal-seg-btn active" onclick="setCalView('month')">Month</button>
-                    <button class="cal-seg-btn" onclick="setCalView('year')">Year</button>
-                </div>
-
-                <div class="cal-nav-wrapper">
-                    <button class="cal-nav-btn" onclick="changeMainMonth(-1)">&#10094;</button>
-                    <button class="cal-nav-btn" onclick="resetMainToToday()">Today</button>
-                    <button class="cal-nav-btn" onclick="changeMainMonth(1)">&#10095;</button>
+            <div class="profile-header-card" style="background: var(--surface-light); padding: 25px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 30px;">
+                <h2 id="hp-name" style="margin-bottom: 15px; font-size: 2rem; color: var(--primary-action);">Name</h2>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; color: var(--text-secondary);">
+                    <p><strong>Contact:</strong> <span id="hp-contact" style="color: var(--text-main);"></span></p>
+                    <p><strong>VRN:</strong> <span id="hp-vrn" style="color: var(--text-main);"></span></p>
+                    <p><strong>ID Number:</strong> <span id="hp-id" style="color: var(--text-main);"></span></p>
+                    <p><strong>Organization:</strong> <span id="hp-org" style="color: var(--text-main);"></span></p>
                 </div>
             </div>
-
-            <div class="cal-weekdays">
-                <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+            
+            <h3 style="margin-bottom: 15px; font-weight: 600;">Visit Log</h3>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>DATE</th>
+                            <th>DESTINATION</th>
+                            <th>TIME IN</th>
+                            <th>TIME OUT</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hp-visits-body">
+                        </tbody>
+                </table>
             </div>
-
-            <div id="tenant-calendar-grid" class="cal-grid">
-                </div>
-
         </div>
 
-        <div id="tenant-pre-reg" class="sub-view view-hidden">
-    <header class="page-header flex-header">
-        <h2>Visitor Pre-Registration</h2>
-        <button class="btn-secondary" onclick="switchTenantView('tenant-dashboard')">← Back to overview</button>
-    </header>
-    
-    <div id="silent-alarm-banner" class="alert-danger hidden">
-        ⚠ RESTRICTED ENTITY DETECTED. CANNOT PROCEED.
-    </div>
+            </div>
 
-    <div class="card modal-dialog-lg" style="margin: 0 auto;">
-        <h3 class="modal-title mb-4">Manual Identity Entry</h3>
-        
-        <form onsubmit="tenantVisitorReg(event)">
-            <div class="input-group mt-3">
-                <label>Full name <span class="text-danger">*</span></label>
-                <input type="text" id="pre-v-name" class="modal-input" required>
-            </div>
-            
-            <div class="input-group mt-3">
-                <label>ID number <span class="text-danger">*</span></label>
-                <input type="text" id="pre-v-id" class="modal-input" required>
-            </div>
-            
-            <div class="input-group mt-3">
-                <label>Contact (Phone / Email) <span class="text-danger">*</span></label>
-                <input type="text" id="pre-v-contact" class="modal-input" required>
-            </div>
-            
-            <div class="input-group mt-3">
-                <label>Organization / Company</label>
-                <input type="text" id="pre-v-org" class="modal-input">
-            </div>
-            
-             <div class="input-group mt-3">
-                <label>Vehicle Registration Number</label>
-                <input type="text" id="pre-v-vehicle" class="modal-input">
-            </div>
-            
-            
-            <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 2rem; width: 100%;">
-                <button type="button" id="btn-vip-register" class="btn-alt" style="display: none; flex: 1; margin-top: 0;" onclick="openGhostModal()">Register As VIP Guest</button>
-                <button type="submit" class="btn-primary" style="flex: 1; margin-top: 0;">VERIFY AND REGISTER</button>
-            </div>
-        </form>
-    </div>
-        </div>
-        
-        <div id="tenant-history" class="sub-view view-hidden">
-    
-    <div id="t-history-main-list">
-        <div class="history-header" style="margin-bottom: 20px;">
-            <h2 id="t-history-total-count" style="font-size: 1.8rem; font-weight: 700;">0 Visitors</h2>
-        </div>
-        
-        <div class="history-controls-row">
-            
-            <div class="date-navigation">
-                <button class="date-btn" onclick="changeTenantHistoryDate(-1)">&#8249;</button>
-                <div class="date-picker-wrapper" id="t-custom-date-wrapper">
-                    <button class="date-btn main-date-btn" onclick="toggleTenantCustomCalendar(event)">
-                        <span id="t-history-date-display">Today</span>
-                        <span style="font-size: 10px; margin-left: 8px;">&#9660;</span>
-                    </button>
+            <div id="guard-deliveries" class="sub-view view-hidden">
+                <header class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <h2>Deliveries & Logistics</h2>
+                    <button class="btn-primary" onclick="openLogPackageModal()">+ Log New Package</button>
+                </header>
+
+                <div class="card" style="display: flex; padding: 0; min-height: 60vh; overflow: hidden;">
                     
-                    <div id="t-custom-calendar-dropdown" class="hidden">
-                        <div class="calendar-header">
-                            <button class="cal-nav-btn" onclick="changeTenantCalendarMonth(-1, event)">&#8249;</button>
-                            <strong id="t-calendar-month-year">Month Year</strong>
-                            <button class="cal-nav-btn" onclick="changeTenantCalendarMonth(1, event)">&#8250;</button>
-                        </div>
-                        <div class="calendar-days-header">
-                            <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
-                        </div>
-                        <div id="t-calendar-days-grid" class="calendar-days-grid"></div>
+                    <div style="flex: 2; padding: 24px;">
+                        <h3 style="margin-top: 0; margin-bottom: 16px; color: var(--text-main); font-size: 1.1rem;">
+                            Awaiting Pickup
+                        </h3>
+                        
+                        <table class="data-table" style="width: 100%; text-align: left; border-collapse: collapse;">
+                            <thead>
+                                <tr style="color: var(--text-muted); font-size: 0.85rem; border-bottom: 2px solid var(--border-color);">
+                                    <th style="padding: 12px 8px;">PACKAGE</th>
+                                    <th style="padding: 12px 8px;">DESTINATION</th>
+                                    <th style="padding: 12px 8px;">DATE DELIVERED</th>
+                                </tr>
+                            </thead>
+                            <tbody id="awaiting-pickup-list">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div style="width: 2px; flex-shrink: 0; background-color: var(--primary-action); opacity: 0.8;"></div>
+
+                    <div style="flex: 1; padding: 24px; background-color: var(--hover-bg);">
+                        <h3 style="margin-top: 0; margin-bottom: 16px; color: var(--text-main); font-size: 1.1rem;">
+                            Collected Today
+                        </h3>
+                        
+                        <table class="data-table" style="width: 100%; text-align: left; border-collapse: collapse;">
+                            <thead>
+                                <tr style="color: var(--text-muted); font-size: 0.85rem; border-bottom: 2px solid var(--border-color);">
+                                    <th style="padding: 12px 8px;">PACKAGE</th>
+                                    <th style="padding: 12px 8px;">COLLECTED BY</th>
+                                    <th style="padding: 12px 8px;">TIME</th> </tr>
+                                </tr>
+                            </thead>
+                            <tbody id="collected-history-list">
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+
+            <div id="guard-communicate" class="sub-view view-hidden">
+        <header class="page-header">
+            <h2>Communicate</h2>
+        </header>
+        
+        <div class="comm-container">
+            <div class="comm-left-panel">
+                <div class="comm-list-header">
+                    <button id="btn-emergency-broadcast" class="btn-emergency premium-feature" onclick="openEmergencyModal()">
+                        <span>⚠️</span> EMERGENCY BROADCAST
+                    </button>
+                <input type="text" id="comm-search-bar" class="comm-search-input" placeholder="Search tenant..." oninput="filterTenants()">
+                </div>
+                
+                <div id="chat-tenant-list" class="chat-list-container">
+                    </div>
+            </div>
+
+            <div class="comm-right-panel">
+                <div class="comm-chat-header">
+                    <div>
+                        <h3 id="active-chat-name" style="margin: 0; color: #1e293b; font-size: 1.1rem;">Select a chat</h3>
+                        <span id="active-chat-company" style="font-size: 0.8rem; color: #64748b; font-weight: 600;">---</span>
+                    </div>
+                    <button id="btn-call-tenant" class="btn-icon-blue premium-feature">📞</button>
+                </div>
+
+                <div id="chat-messages-area" class="comm-messages-area">
+                    <div style="text-align: center; color: #94a3b8; margin: auto;">
+                        Select a tenant on the left to start messaging.
                     </div>
                 </div>
-                <button class="date-btn" onclick="changeTenantHistoryDate(1)">&#8250;</button>
+
+                <div id="quick-replies-bar" class="comm-quick-replies premium-feature">
+                    <button class="btn-quick-reply" onclick="sendQuickReply('Your visitor is waiting at the lobby.')">Visitor waiting</button>
+                    <button class="btn-quick-reply" onclick="sendQuickReply('You have a package at the front desk.')">Package arrived</button>
+                    <button class="btn-quick-reply" onclick="sendQuickReply('Please contact the front desk immediately.')">Contact desk</button>
+                </div>
+
+                <div class="comm-input-area">
+                    <button id="btn-attach" class="btn-icon-blue premium-feature">📎</button>
+                    <input type="text" id="chat-input-field" class="comm-input-field" placeholder="Type a message..." onkeypress="handleChatEnter(event)">
+                    <button class="btn-send" onclick="sendChatMessage()">➤</button>
+                </div>
+            </div>
+        </div>
+            </div>
+
+            <div id="settings-view" class="sub-view view-hidden">
+        <header class="page-header">
+            <h2>Control Center</h2>
+        </header>
+
+        <div class="settings-wrapper">
+            
+            <div class="settings-card">
+                <h3>Appearance</h3>
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-text">
+                            <strong>Dark Mode</strong>
+                            <span>Switch between Light Mode and Obsidian Dark Mode.</span>
+                        </div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="setting-theme" onchange="toggleDarkMode()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <h3>Alerts & Sound</h3>
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-text">
+                            <strong>Push Notifications</strong>
+                            <span>Master toggle for all SMS and app push alerts.</span>
+                        </div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" checked id="setting-notifs">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-text">
+                            <strong>Sound Effects</strong>
+                            <span>Play a chime for new visitors and messages.</span>
+                        </div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" checked id="setting-sound">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div id="role-specific-card" class="settings-card">
+                </div>
+
+            </div>
+            </div>
+
+            <div id="tenant-dashboard" class="sub-view view-hidden">
+                <header class="page-header">
+                    <h2>Tenant Overview</h2>
+                    <button id="btn-dashboard-prereg" class="btn-primary" onclick="switchTenantView('tenant-pre-reg')">+ VIP Pre-Registration</button>
+                </header>
+
+                <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+                    <div class="stat-card" style="cursor: pointer;" onclick="setTenantFilter('EXPECTED')">
+                        <p class="stat-label">Expected Today</p>
+                        <h3 class="stat-value" id="tenant-stat-expected">0</h3> 
+                    </div>
+                    <div class="stat-card" style="cursor: pointer;" onclick="setTenantFilter('ON_SITE')">
+                        <p class="stat-label">In Building</p>
+                        <h3 class="stat-value" id="tenant-stat-onsite">0</h3> 
+                    </div>
+                    <div class="stat-card" style="cursor: pointer;" onclick="setTenantFilter('VIP')">
+                        <p class="stat-label">VIPs Arriving</p>
+                        <h3 class="stat-value" id="tenant-stat-vip">0</h3> 
+                    </div>
+                    <div class="stat-card" style="cursor: pointer; border-left: 4px solid #ef4444;" onclick="setTenantFilter('BLACKLIST')">
+                        <p class="stat-label">Blacklist Matches</p>
+                        <h3 class="stat-value text-danger" id="tenant-stat-blacklist">0</h3> 
+                    </div>
+                </div>
+
+                <div class="card data-table-card">
+                    <h3 id="tenant-table-title" style="cursor: pointer; display: inline-block;">Recent Activity</h3>
+                    <span onclick="setTenantFilter('ALL')" style="float: right; color: var(--primary-action); font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-top: 5px;">View All Activity</span>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Visitor Name</th>
+                                <th>Status</th>
+                                <th>Time In</th>
+                                <th>Time Out</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tenant-overview-table">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="tenant-calendar-view" class="sub-view view-hidden cal-container">
+                
+                <div class="cal-header-row">
+                    <div class="cal-title-wrapper">
+                        <h2 id="main-cal-title" class="cal-obsidian-heading">February 2026</h2>
+                    </div>
+
+                    <div class="cal-segment-control">
+                        <button class="cal-seg-btn" onclick="setCalView('day')">Day</button>
+                        <button class="cal-seg-btn" onclick="setCalView('week')">Week</button>
+                        <button class="cal-seg-btn active" onclick="setCalView('month')">Month</button>
+                        <button class="cal-seg-btn" onclick="setCalView('year')">Year</button>
+                    </div>
+
+                    <div class="cal-nav-wrapper">
+                        <button class="cal-nav-btn" onclick="changeMainMonth(-1)">&#10094;</button>
+                        <button class="cal-nav-btn" onclick="resetMainToToday()">Today</button>
+                        <button class="cal-nav-btn" onclick="changeMainMonth(1)">&#10095;</button>
+                    </div>
+                </div>
+
+                <div class="cal-weekdays">
+                    <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+                </div>
+
+                <div id="tenant-calendar-grid" class="cal-grid">
+                    </div>
+
+            </div>
+
+            <div id="tenant-pre-reg" class="sub-view view-hidden">
+        <header class="page-header flex-header">
+            <h2>Visitor Pre-Registration</h2>
+            <button class="btn-secondary" onclick="switchTenantView('tenant-dashboard')">← Back to overview</button>
+        </header>
+        
+        <div id="silent-alarm-banner" class="alert-danger hidden">
+            ⚠ RESTRICTED ENTITY DETECTED. CANNOT PROCEED.
+        </div>
+
+        <div class="card modal-dialog-lg" style="margin: 0 auto;">
+            <h3 class="modal-title mb-4">Manual Identity Entry</h3>
+            
+            <form onsubmit="tenantVisitorReg(event)">
+                <div class="input-group mt-3">
+                    <label>Full name <span class="text-danger">*</span></label>
+                    <input type="text" id="pre-v-name" class="modal-input" required>
+                </div>
+                
+                <div class="input-group mt-3">
+                    <label>ID number <span class="text-danger">*</span></label>
+                    <input type="text" id="pre-v-id" class="modal-input" required>
+                </div>
+                
+                <div class="input-group mt-3">
+                    <label>Contact (Phone / Email) <span class="text-danger">*</span></label>
+                    <input type="text" id="pre-v-contact" class="modal-input" required>
+                </div>
+                
+                <div class="input-group mt-3">
+                    <label>Organization / Company</label>
+                    <input type="text" id="pre-v-org" class="modal-input">
+                </div>
+                
+                <div class="input-group mt-3">
+                    <label>Vehicle Registration Number</label>
+                    <input type="text" id="pre-v-vehicle" class="modal-input">
+                </div>
+                
+                
+                <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 2rem; width: 100%;">
+                    <button type="button" id="btn-vip-register" class="btn-alt" style="display: none; flex: 1; margin-top: 0;" onclick="openGhostModal()">Register As VIP Guest</button>
+                    <button type="submit" class="btn-primary" style="flex: 1; margin-top: 0;">VERIFY AND REGISTER</button>
+                </div>
+            </form>
+        </div>
             </div>
             
-            <div class="filter-actions">
-                <div class="search-box">
-                    <span class="search-icon">🔍</span>
-                    <input type="text" id="t-history-search" placeholder="Search my visitors..." oninput="renderTenantHistoryTable()">
+            <div id="tenant-history" class="sub-view view-hidden">
+        
+        <div id="t-history-main-list">
+            <div class="history-header" style="margin-bottom: 20px;">
+                <h2 id="t-history-total-count" style="font-size: 1.8rem; font-weight: 700;">0 Visitors</h2>
+            </div>
+            
+            <div class="history-controls-row">
+                
+                <div class="date-navigation">
+                    <button class="date-btn" onclick="changeTenantHistoryDate(-1)">&#8249;</button>
+                    <div class="date-picker-wrapper" id="t-custom-date-wrapper">
+                        <button class="date-btn main-date-btn" onclick="toggleTenantCustomCalendar(event)">
+                            <span id="t-history-date-display">Today</span>
+                            <span style="font-size: 10px; margin-left: 8px;">&#9660;</span>
+                        </button>
+                        
+                        <div id="t-custom-calendar-dropdown" class="hidden">
+                            <div class="calendar-header">
+                                <button class="cal-nav-btn" onclick="changeTenantCalendarMonth(-1, event)">&#8249;</button>
+                                <strong id="t-calendar-month-year">Month Year</strong>
+                                <button class="cal-nav-btn" onclick="changeTenantCalendarMonth(1, event)">&#8250;</button>
+                            </div>
+                            <div class="calendar-days-header">
+                                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                            </div>
+                            <div id="t-calendar-days-grid" class="calendar-days-grid"></div>
+                        </div>
+                    </div>
+                    <button class="date-btn" onclick="changeTenantHistoryDate(1)">&#8250;</button>
                 </div>
+                
+                <div class="filter-actions">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="t-history-search" placeholder="Search my visitors..." oninput="renderTenantHistoryTable()">
+                    </div>
 
-                <select class="filter-select" id="t-history-filter-vip" onchange="renderTenantHistoryTable()">
-                    <option value="ALL">All Visitors</option>
-                    <option value="VIP">VIP Visitors</option>
-                </select>
+                    <select class="filter-select" id="t-history-filter-vip" onchange="renderTenantHistoryTable()">
+                        <option value="ALL">All Visitors</option>
+                        <option value="VIP">VIP Visitors</option>
+                    </select>
 
-                <select class="filter-select" id="t-history-filter-status" onchange="renderTenantHistoryTable()">
-                    <option value="ALL">All Statuses</option>
-                    <option value="SIGNED_IN">Currently signed in</option>
-                    <option value="SIGNED_OUT">Signed out</option>
-                </select>
+                    <select class="filter-select" id="t-history-filter-status" onchange="renderTenantHistoryTable()">
+                        <option value="ALL">All Statuses</option>
+                        <option value="SIGNED_IN">Currently signed in</option>
+                        <option value="SIGNED_OUT">Signed out</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-container" style="margin-top: 20px;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>NAME</th>
+                            <th>ID NUMBER</th>
+                            <th>TIME IN</th>
+                            <th>TIME OUT</th>
+                        </tr>
+                    </thead>
+                    <tbody id="t-history-table-body">
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <div class="table-container" style="margin-top: 20px;">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>NAME</th>
-                        <th>ID NUMBER</th>
-                        <th>TIME IN</th>
-                        <th>TIME OUT</th>
-                    </tr>
-                </thead>
-                <tbody id="t-history-table-body">
-                </tbody>
-            </table>
+        <div id="t-history-profile-view" class="hidden">
+            <button class="btn-back" onclick="closeTenantHistoryProfile()" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1rem; margin-bottom: 20px; display: flex; align-items: center; gap: 5px;">
+                &#8592; Back to My History
+            </button>
+            
+            <div class="profile-header-card" style="background: var(--surface-light); padding: 25px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 30px;">
+                <h2 id="t-hp-name" style="margin-bottom: 15px; font-size: 2rem; color: var(--primary-action);">Name</h2>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; color: var(--text-secondary);">
+                    <p><strong>Contact:</strong> <span id="t-hp-contact" style="color: var(--text-main);"></span></p>
+                    <p><strong>VRN:</strong> <span id="t-hp-vrn" style="color: var(--text-main);"></span></p>
+                    <p><strong>ID Number:</strong> <span id="t-hp-id" style="color: var(--text-main);"></span></p>
+                    </div>
+            </div>
+            
+            <h3 style="margin-bottom: 15px; font-weight: 600;">Visit Log</h3>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>DATE</th>
+                            <th>TIME IN</th>
+                            <th>TIME OUT</th>
+                        </tr>
+                    </thead>
+                    <tbody id="t-hp-visits-body">
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
+            </div>
 
-    <div id="t-history-profile-view" class="hidden">
-        <button class="btn-back" onclick="closeTenantHistoryProfile()" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1rem; margin-bottom: 20px; display: flex; align-items: center; gap: 5px;">
-            &#8592; Back to My History
-        </button>
-        
-        <div class="profile-header-card" style="background: var(--surface-light); padding: 25px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 30px;">
-            <h2 id="t-hp-name" style="margin-bottom: 15px; font-size: 2rem; color: var(--primary-action);">Name</h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; color: var(--text-secondary);">
-                <p><strong>Contact:</strong> <span id="t-hp-contact" style="color: var(--text-main);"></span></p>
-                <p><strong>VRN:</strong> <span id="t-hp-vrn" style="color: var(--text-main);"></span></p>
-                <p><strong>ID Number:</strong> <span id="t-hp-id" style="color: var(--text-main);"></span></p>
+            <div id="tenant-deliveries" class="sub-view view-hidden">
+        <header class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h2>Deliveries</h2>
+            </header>
+
+        <div class="card" style="display: flex; padding: 0; min-height: 60vh; overflow: hidden;">
+            
+            <div style="flex: 2; padding: 24px;">
+                <h3 style="margin-top: 0; margin-bottom: 16px; color: var(--text-main); font-size: 1.1rem;">
+                    Ready for Pickup at Reception
+                </h3>
+                
+                <table class="data-table" style="width: 100%; text-align: left; border-collapse: collapse;">
+                    <thead>
+                        <tr style="color: var(--text-muted); font-size: 0.85rem; border-bottom: 2px solid var(--border-color);">
+                            <th style="padding: 12px 8px;">COURIER</th>
+                            <th style="padding: 12px 8px;">PACKAGE DETAILS</th>
+                            <th style="padding: 12px 8px;">TIME ARRIVED</th>
+                        </tr>
+                    </thead>
+                    <tbody id="t-awaiting-pickup-list">
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="width: 2px; flex-shrink: 0; background-color: var(--primary-action); opacity: 0.8;"></div>
+
+            <div style="flex: 1; padding: 24px; background-color: var(--hover-bg);">
+                <h3 style="margin-top: 0; margin-bottom: 16px; color: var(--text-main); font-size: 1.1rem;">
+                    Collection History
+                </h3>
+                
+                <table class="data-table" style="width: 100%; text-align: left; border-collapse: collapse;">
+                    <thead>
+                        <tr style="color: var(--text-muted); font-size: 0.85rem; border-bottom: 2px solid var(--border-color);">
+                            <th style="padding: 12px 8px;">PACKAGE</th>
+                            <th style="padding: 12px 8px;">COLLECTED BY</th>
+                            <th style="padding: 12px 8px;">TIME</th> 
+                        </tr>
+                    </thead>
+                    <tbody id="t-collected-history-list">
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+            </div>
+
+           <div id="tenant-communicate" class="sub-view view-hidden">
+                <header class="page-header">
+                    <h2>Communicate</h2>
+                </header>
+                
+                <div class="comm-container">
+                    <div class="comm-left-panel">
+                        <div class="comm-list-header">
+                            <button id="t-btn-emergency" class="btn-emergency premium-feature" style="width: 100%; margin-bottom: 10px; background-color: var(--danger); color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer;" onclick="openTenantEmergencyModal()">
+                                <span>🚨</span> REPORT EMERGENCY
+                            </button>
+                            <input type="text" id="t-comm-search-bar" class="comm-search-input" placeholder="Search messages..." oninput="filterTenantChats()">
+                        </div>
+                        
+                        <div id="t-chat-list" class="chat-list-container">
+                            </div>
+                    </div>
+
+                    <div class="comm-right-panel">
+                        <div class="comm-chat-header">
+                            <div>
+                                <h3 id="t-active-chat-name" style="margin: 0; color: #1e293b; font-size: 1.1rem;">Select a chat</h3>
+                                <span id="t-active-chat-role" style="font-size: 0.8rem; color: #64748b; font-weight: 600;">---</span>
+                            </div>
+                            <button id="t-btn-call" class="btn-icon-blue premium-feature">📞</button>
+                        </div>
+
+                        <div id="t-chat-messages-area" class="comm-messages-area">
+                            <div style="text-align: center; color: #94a3b8; margin: auto;">
+                                Select a conversation on the left.
+                            </div>
+                        </div>
+
+                        <div id="t-quick-replies-bar" class="comm-quick-replies premium-feature">
+                            <button class="btn-quick-reply" onclick="sendTenantQuickReply('Please send the visitor up.')">Send them up</button>
+                            <button class="btn-quick-reply" onclick="sendTenantQuickReply('I will be right down.')">I'll come down</button>
+                            <button class="btn-quick-reply" onclick="sendTenantQuickReply('Please hold the package at the desk.')">Hold package</button>
+                        </div>
+
+                        <div class="comm-input-area">
+                            <button id="t-btn-attach" class="btn-icon-blue premium-feature">📎</button>
+                            <input type="text" id="t-chat-input-field" class="comm-input-field" placeholder="Type a message..." onkeypress="handleTenantChatEnter(event)">
+                            <button class="btn-send" onclick="sendTenantChatMessage()">➤</button>
+                        </div>
+                    </div>
                 </div>
-        </div>
-        
-        <h3 style="margin-bottom: 15px; font-weight: 600;">Visit Log</h3>
-        <div class="table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>DATE</th>
-                        <th>TIME IN</th>
-                        <th>TIME OUT</th>
-                    </tr>
-                </thead>
-                <tbody id="t-hp-visits-body">
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
+            </div>
         </main>
     </section>
+
+
 
 
     <div id="visitor-profile-modal" class="modal hidden">
@@ -812,6 +909,43 @@
         </div>
         
         <button class="btn-primary" style="width: 100%;" onclick="sendEmergencyBroadcast()">SEND BROADCAST ALERT</button>
+    </div>
+</div>
+
+<div id="t-modal-emergency" class="modal hidden">
+    <div class="modal-content card" style="border-top: 5px solid var(--danger);">
+        <span class="close" onclick="closeTenantEmergencyModal()">&times;</span>
+        <h2 style="color: var(--danger); border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">Report Emergency to Guard</h2>
+        
+        <div style="margin: 1.5rem 0;">
+            <p style="font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; text-transform: uppercase;">
+                Select Emergency Type <span style="color: var(--danger);">*</span>
+            </p>
+            
+            <select id="t-emergency-type-select" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 4px; font-size: 1rem; background: var(--input-bg); color: var(--text-main); outline: none; margin-bottom: 20px;">
+                <option value="" disabled selected>-- Select reason --</option>
+                <option value="Medical Emergency">Medical Emergency</option>
+                <option value="Security Threat">Security Threat / Intruder</option>
+                <option value="Fire / Smoke">Fire / Smoke Detected</option>
+                <option value="Severe Hazard">Severe Water Leak / Hazard</option>
+            </select>
+        </div>
+        
+        <button class="btn-primary" style="width: 100%; background-color: var(--danger); border: none;" onclick="sendTenantEmergency()">ALERT SECURITY FRONT DESK</button>
+    </div>
+</div>
+
+<div id="guard-incoming-emergency" class="modal hidden" style="z-index: 9999; background-color: rgba(239, 68, 68, 0.85);">
+    <div class="modal-content card" style="text-align: center; border: 5px solid var(--danger); max-width: 500px;">
+        <div style="font-size: 5rem; margin-bottom: 10px; animation: pulseAlert 1s infinite;">🚨</div>
+        <h1 style="color: var(--danger); font-size: 2rem; margin-bottom: 10px; text-transform: uppercase;">Incoming Emergency Alert</h1>
+        
+        <div style="background-color: var(--hover-bg); padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+            <h2 id="incoming-emergency-tenant" style="color: var(--text-main); margin: 0 0 10px 0;">Tenant Name</h2>
+            <h3 id="incoming-emergency-type" style="color: var(--danger); margin: 0; font-weight: 800; font-size: 1.5rem;">TYPE</h3>
+        </div>
+        
+        <button class="btn-primary" style="width: 100%; font-size: 1.2rem; padding: 15px; background-color: var(--text-main); border: none;" onclick="acknowledgeEmergency()">ACKNOWLEDGE & RESPOND</button>
     </div>
 </div>
 

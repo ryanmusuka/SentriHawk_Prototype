@@ -1343,6 +1343,14 @@ function switchTenantView(viewId, navElement = null) {
             if (vipBtn) vipBtn.style.display = tier >= 2 ? '' : 'none';
             break;
 
+        case 'tenant-communicate':
+            renderTenantChatList();
+            break;
+        
+        case 'tenant-deliveries':
+            renderTenantDeliveries();
+            break;
+
         case 'tenant-history':
             renderTenantHistoryTable();
             break;
@@ -1704,3 +1712,196 @@ function selectTenantCustomDate(year, month, day, e) {
     document.getElementById('t-custom-calendar-dropdown').classList.add('hidden');
     updateTenantHistoryUI(); 
 }
+
+// === TENANT DELIVERIES LOGIC ===
+
+function renderTenantDeliveries() {
+    const awaitingList = document.getElementById('t-awaiting-pickup-list');
+    const collectedList = document.getElementById('t-collected-history-list');
+
+    if (!awaitingList || !collectedList) return;
+
+    awaitingList.innerHTML = '';
+    collectedList.innerHTML = '';
+
+    // Security Scope: Only fetch packages matching this tenant's ID/Name
+    // Make sure 'destination' from the guard dropdown matches how you store state.user.username
+    const myTenantId = state.user.username; 
+
+    // 1. Filter and Draw Awaiting Packages
+    const myActivePackages = activePackages.filter(pkg => pkg.destination === myTenantId);
+
+    if (myActivePackages.length === 0) {
+        awaitingList.innerHTML = '<tr><td colspan="3" style="padding: 16px; text-align: center; color: var(--text-muted);">You have no packages waiting at reception.</td></tr>';
+    } else {
+        myActivePackages.forEach(pkg => {
+            awaitingList.innerHTML += `
+                <tr class="table-row-hover">
+                    <td style="padding: 16px 8px; color: var(--text-main);"><strong>${pkg.courier}</strong></td>
+                    <td style="padding: 16px 8px; color: var(--text-muted);">${pkg.details || 'N/A'}</td>
+                    <td style="padding: 16px 8px; color: var(--text-main); font-weight: 500;">${pkg.time}</td>
+                </tr>
+            `;
+        });
+    }
+
+    // 2. Filter and Draw Collected History
+    // Check both destination and collectedTenant depending on how the Guard assigned it
+    const myCollectedPackages = collectedPackages.filter(pkg => 
+        pkg.destination === myTenantId || pkg.collectedTenant === myTenantId
+    );
+
+    if (myCollectedPackages.length === 0) {
+        collectedList.innerHTML = '<tr><td colspan="3" style="padding: 16px; text-align: center; color: var(--text-muted);">No collections logged today.</td></tr>';
+    } else {
+        myCollectedPackages.forEach(pkg => {
+            collectedList.innerHTML += `
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 16px 8px; vertical-align: top;">
+                        <strong style="color: var(--text-main);">${pkg.courier}</strong>
+                    </td>
+                    <td style="padding: 16px 8px;">
+                        <div style="font-weight: 600; color: var(--text-main);">${pkg.collectedBy}</div>
+                    </td>
+                    <td style="padding: 16px 8px; color: var(--text-main);">
+                        ${pkg.collectedTime}
+                    </td>
+                </tr>
+            `;
+        });
+    }
+}
+
+
+// === TENANT COMMUNICATE LOGIC ===
+
+const tenantChats = [
+    { id: 'tc1', name: 'P. Karonjoto', role: 'Current Guard', lastMsg: 'Your visitor is waiting at the lobby.', time: '10:42 AM' },
+    { id: 'tc2', name: 'Head Of Security', role: 'Property Admin', lastMsg: 'The plumber will arrive at 2 PM.', time: 'Yesterday' },
+    { id: 'tc3', name: 'J. Chimbetu', role: 'Non-Active', lastMsg: 'Package held overnight.', time: 'Tuesday' },
+];
+
+let tActiveChatId = null;
+
+function renderTenantChatList() {
+    const listContainer = document.getElementById('t-chat-list');
+    if (!listContainer) return;
+    listContainer.innerHTML = '';
+
+    tenantChats.forEach(chat => {
+        // Visually pin/highlight the active front desk guard
+        const isPinned = chat.id === 'tc1' ? 'border-left: 3px solid var(--primary-action);' : '';
+
+        listContainer.innerHTML += `
+            <div id="t-chat-row-${chat.id}" class="chat-list-item" style="${isPinned}" onclick="selectTenantChat('${chat.id}', '${chat.name}', '${chat.role}')">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+                    <strong class="chat-name-text">${chat.name}</strong>
+                    <span class="chat-time-text">${chat.time}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span class="chat-msg-text">${chat.lastMsg}</span>
+                    <span class="chat-company-text">${chat.role}</span>
+                </div>
+            </div>
+        `;
+    });
+}
+
+function filterTenantChats() {
+    const searchTerm = document.getElementById('t-comm-search-bar').value.toLowerCase();
+    
+    tenantChats.forEach(chat => {
+        const row = document.getElementById(`t-chat-row-${chat.id}`);
+        if (row) {
+            const matchesName = chat.name.toLowerCase().includes(searchTerm);
+            const matchesRole = chat.role.toLowerCase().includes(searchTerm);
+            row.style.display = (matchesName || matchesRole) ? 'block' : 'none';
+        }
+    });
+}
+
+function handleTenantChatEnter(event) {
+    if (event.key === 'Enter') sendTenantChatMessage();
+}
+
+function sendTenantQuickReply(text) {
+    document.getElementById('t-chat-input-field').value = text;
+    sendTenantChatMessage();
+}
+
+function selectTenantChat(id, name, role) {
+    tActiveChatId = id;
+
+    // Toggle active selection state
+    document.querySelectorAll('#t-chat-list .chat-list-item').forEach(el => el.classList.remove('selected'));
+    const selectedRow = document.getElementById(`t-chat-row-${id}`);
+    if (selectedRow) selectedRow.classList.add('selected');
+
+    document.getElementById('t-active-chat-name').innerText = name;
+    document.getElementById('t-active-chat-role').innerText = role;
+
+    const msgArea = document.getElementById('t-chat-messages-area');
+    
+    // STRICT COPY of the Guard layout: 
+    // bubble-tenant = Incoming/Left Side (Guard speaking to Tenant)
+    // bubble-guard = Outgoing/Right Side (Tenant replying)
+    msgArea.innerHTML = `
+        <div class="bubble-tenant">
+            Hello, please let us know if you need any assistance today.
+        </div>
+        <div class="bubble-guard">
+            Thank you, will do.
+        </div>
+        <div class="bubble-tenant">
+            ${tenantChats.find(c => c.id === id).lastMsg}
+        </div>
+    `;
+    
+    msgArea.scrollTop = msgArea.scrollHeight;
+}
+
+function sendTenantChatMessage() {
+    if (!tActiveChatId) {
+        alert("Please select a conversation from the list first.");
+        return;
+    }
+
+    const input = document.getElementById('t-chat-input-field');
+    const msgText = input.value.trim();
+    if (!msgText) return;
+
+    const msgArea = document.getElementById('t-chat-messages-area');
+    
+    // STRICT COPY: Using bubble-guard so the sent message pops up on the RIGHT side
+    msgArea.innerHTML += `<div class="bubble-guard">${msgText}</div>`;
+
+    input.value = '';
+    msgArea.scrollTop = msgArea.scrollHeight; 
+}
+
+// === EMERGENCY ALERT LOGIC ===
+
+function openTenantEmergencyModal() {
+    document.getElementById('t-modal-emergency').classList.remove('hidden');
+}
+
+function closeTenantEmergencyModal() {
+    document.getElementById('t-modal-emergency').classList.add('hidden');
+    document.getElementById('t-emergency-type-select').value = ""; // Reset dropdown
+}
+
+function sendTenantEmergency() {
+    const select = document.getElementById('t-emergency-type-select');
+    const emergencyType = select.value;
+    
+    if (!emergencyType) {
+        alert("Please select the type of emergency.");
+        return;
+    }
+    
+    // 1. Close the tenant modal
+    closeTenantEmergencyModal();
+    
+   
+}
+
