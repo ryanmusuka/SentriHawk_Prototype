@@ -1971,16 +1971,16 @@ function switchHOSView(viewId, navElement = null) {
             renderHOSDashboard(); 
             break;
         case 'hos-analytics':
-            // renderHOSAnalytics(); // Will build later
+            renderHOSAnalytics(); 
             break;
         case 'hos-surveillance':
-            // renderHOSSurveillance(); // Will build later
+            // renderHOSSurveillance();
             break;
         case 'hos-watchlist':
-            // renderHOSWatchlist(); // Will build later
+            // renderHOSWatchlist(); 
             break;
         case 'hos-history':
-            // renderHOSHistory(); // Will build later
+            // renderHOSHistory(); 
             break;
     }
 }
@@ -1992,7 +1992,7 @@ function setHOSFilter(filter) {
     currentHOSFilter = filter;
     
     // Optional: Update the Activity Feed Title dynamically
-    const feedTitle = document.getElementById('hos-feed-title'); // Add this ID to your HTML <h3> if you want it to change
+    const feedTitle = document.getElementById('hos-feed-title'); 
     if (feedTitle) {
         if (filter === 'EXPECTED') feedTitle.innerText = 'Expected Arrivals Feed';
         else if (filter === 'ON_SITE') feedTitle.innerText = 'On-Premises Feed';
@@ -2001,6 +2001,29 @@ function setHOSFilter(filter) {
     }
     
     renderHOSDashboard(); // Redraw with the new filter
+}
+
+// The HOS Filter Controller
+function setHOSFilter(filter) {
+    currentHOSFilter = filter;
+    
+    const titleEl = document.getElementById('hos-feed-title');
+    
+    // Dynamically change the Feed title based on the active KPI filter
+    if (titleEl) {
+        if (filter === 'EXPECTED') {
+            titleEl.innerText = 'Expected Arrivals Feed';
+        } else if (filter === 'ON_SITE') {
+            titleEl.innerText = 'Currently On-Premises';
+        } else if (filter === 'INCIDENTS') {
+            titleEl.innerText = 'Security Alerts Feed';
+        } else {
+            titleEl.innerText = 'Live Activity Feed';
+        }
+    }
+    
+    // Redraw the dashboard to apply the filter logic you already built inside renderHOSDashboard
+    renderHOSDashboard(); 
 }
 
 function renderHOSDashboard() {
@@ -2074,8 +2097,6 @@ function renderHOSDashboard() {
                 // Format time string
                 const timeStr = visitor.timeIn || (visitor.visits && visitor.visits.length > 0 ? visitor.visits[visitor.visits.length - 1].time_in : 'Pending');
                 
-                // Security Note: Using textContent properties via template literal injection. 
-                // We ensure no raw HTML from the user input is executed.
                 eventDiv.innerHTML = `
                     <div style="font-size: 1.2rem;">${icon}</div>
                     <div>
@@ -2093,37 +2114,394 @@ function renderHOSDashboard() {
         }
     }
     
-    // ==========================================
+   // ==========================================
     // 2. POPULATE PRIORITY QUEUE
     // ==========================================
     const queueContainer = document.getElementById('hos-priority-queue');
     if (queueContainer) {
-        if (tier >= 3) {
+        // Fetch the sorted, weighted array of active alerts
+        const activeAlerts = generatePriorityAlerts(tier);
+        
+        // UPDATE THE KPI COUNTER: Sync the visual number with the actual active alerts!
+        const kpiAlerts = document.getElementById('hos-kpi-alerts');
+        if (kpiAlerts) kpiAlerts.textContent = activeAlerts.length;
+
+        queueContainer.innerHTML = ''; // Clear existing
+
+        if (activeAlerts.length === 0) {
             queueContainer.innerHTML = `
-                <div style="padding: 15px; border-bottom: 1px solid var(--danger); background-color: rgba(239, 68, 68, 0.05);">
+                <div style="text-align: center; padding: 40px 10px;">
+                    <span style="font-size: 2.5rem; opacity: 0.3;">🛡️</span>
+                    <p style="color: var(--text-muted); font-size: 0.95rem; font-weight: 500;">No active threats detected.</p>
+                    <p style="color: var(--text-muted); font-size: 0.8rem; opacity: 0.7;">System operating within normal parameters.</p>
+                </div>
+            `;
+        } else {
+            // Render the sorted alerts
+            activeAlerts.forEach(alert => {
+                const alertDiv = document.createElement('div');
+                alertDiv.style.cssText = `padding: 15px; border-bottom: 1px solid ${alert.color}; background-color: ${alert.bg}; transition: all 0.3s ease;`;
+                
+                alertDiv.innerHTML = `
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span style="color: var(--danger); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.5px;">⚠️ ACL MATCH DETECTED</span>
-                        <span style="color: var(--text-muted); font-size: 0.75rem;">2 mins ago</span>
+                        <span style="color: ${alert.color}; font-weight: 800; font-size: 0.85rem; letter-spacing: 0.5px;">${alert.title}</span>
+                        <span style="color: var(--text-muted); font-size: 0.75rem; font-weight: 600;">${alert.time}</span>
                     </div>
-                    <div style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 10px;">
-                        Facial geometry match (98%) for <span style="font-weight: bold;">"Benjamin Wright"</span> at Main Lobby Camera 2.
+                    <div style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 12px; line-height: 1.4;">
+                        ${alert.message}
                     </div>
                     <div style="display: flex; gap: 10px;">
-                        <button class="btn-primary" style="background-color: var(--danger); border: none; padding: 5px 10px; font-size: 0.8rem;">DISPATCH GUARD</button>
-                        <button class="btn-primary" style="background-color: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 5px 10px; font-size: 0.8rem;">DISMISS</button>
+                        <button onclick="dismissHOSAlert('${alert.id}')" class="btn-primary" style="background-color: ${alert.color}; border: none; padding: 6px 12px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
+                            ${alert.severity === 4 ? 'DISPATCH ESCORT' : 'DISPATCH GUARD'}
+                        </button>
+                        <button onclick="dismissHOSAlert('${alert.id}')" style="background-color: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 6px 12px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border-radius: 6px;">
+                            DISMISS
+                        </button>
                     </div>
-                </div>
-            `;
-            // Also update the KPI alert counter at the top!
-            const kpiAlerts = document.getElementById('hos-kpi-alerts');
-            if (kpiAlerts) kpiAlerts.textContent = "1";
-        } else {
-            queueContainer.innerHTML = `
-                <div style="text-align: center; padding: 30px 10px;">
-                    <span style="font-size: 2rem; opacity: 0.5;">🛡️</span>
-                    <p style="color: var(--text-muted); font-size: 0.9rem;">No active threats detected.</p>
-                </div>
-            `;
+                `;
+                queueContainer.appendChild(alertDiv);
+            });
         }
     }
+}
+
+// Set to track IDs of alerts the HOS has resolved/dismissed
+const dismissedHOSAlerts = new Set();
+function generatePriorityAlerts(tier) {
+    let alerts = [];
+    const visitors = getGuardVisitors();
+
+    // 1. DYNAMIC ALERTS: Watchlist & Ghost Protocol (from Database)
+    visitors.forEach(v => {
+        // Only show alerts if they haven't been dismissed
+        if (v.isBlacklisted && !dismissedHOSAlerts.has(`acl_${v.id}`)) {
+            alerts.push({
+                id: `acl_${v.id}`,
+                severity: 2,
+                title: "⚠️ ACL MATCH DETECTED",
+                message: `Facial geometry match for restricted entity: <b>${v.name}</b> at Main Checkpoint.`,
+                time: v.timeIn || "Just now",
+                color: "var(--danger)",
+                bg: "rgba(239, 68, 68, 0.05)"
+            });
+        }
+        
+        // VIP Ghost Protocol Arrivals (Only if they are ON SITE)
+        const status = v.status || "EXPECTED";
+        if (v.isGhost && (status === "ON SITE" || status === "ON_SITE") && !dismissedHOSAlerts.has(`vip_${v.id}`)) {
+            alerts.push({
+                id: `vip_${v.id}`,
+                severity: 4,
+                title: "💎 GHOST PROTOCOL ARRIVAL",
+                message: `VIP Guest requires immediate discrete escort to ${v.company || 'Host'}.`,
+                time: v.timeIn || "Just now",
+                color: "#3b82f6", // Blue
+                bg: "rgba(59, 130, 246, 0.05)"
+            });
+        }
+    });
+
+    // 2. HARDCODED ALERTS: Hardware Failures & Panic Alarms
+    // We only inject these to demonstrate system capabilities (especially for higher tiers)
+    if (!dismissedHOSAlerts.has('panic_mock_1')) {
+        alerts.push({
+            id: 'panic_mock_1',
+            severity: 1, // HIGHEST PRIORITY
+            title: "🚨 TENANT PANIC ALARM",
+            message: "<b>Romaine Joni</b> triggered an 'Intruder' alert in Suite 402.",
+            time: "1 min ago",
+            color: "#b91c1c", // Dark Red
+            bg: "rgba(185, 28, 28, 0.1)"
+        });
+    }
+
+    if (tier >= 2 && !dismissedHOSAlerts.has('hw_mock_1')) {
+        alerts.push({
+            id: 'hw_mock_1',
+            severity: 3,
+            title: "⚙️ HARDWARE ANOMALY",
+            message: "Gate 3 turnstile motor unresponsive. Failsafe activated (Locked).",
+            time: "14 mins ago",
+            color: "var(--primary-action)", // Orange
+            bg: "rgba(234, 88, 12, 0.05)"
+        });
+    }
+
+    // 3. THE SORTING ALGORITHM (O(N log N) Complexity)
+    // Sort ascending by severity (1 is first, 4 is last)
+    alerts.sort((a, b) => a.severity - b.severity);
+
+    return alerts;
+}
+
+// Action Controller: Handles dismissing an alert
+function dismissHOSAlert(alertId) {
+    dismissedHOSAlerts.add(alertId);
+    renderHOSDashboard(); // Redraw the dashboard to remove it
+}
+
+// ==========================================
+// HOS ANALYTICS: MOCK DATA & STATE
+// ==========================================
+let trafficChartInstance = null;
+let tenantChartInstance = null;
+
+const analyticsData = {
+    '24H': {
+        vol: 184, volChange: '+12% vs yesterday', volColor: 'var(--success)',
+        inc: 2, incChange: 'No change vs yesterday', incColor: 'var(--text-muted)',
+        time: '32s', watchlist: 45,
+        labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+        traffic: [5, 12, 65, 42, 45, 15]
+    },
+    '7D': {
+        vol: 1420, volChange: '+5% vs last week', volColor: 'var(--success)',
+        inc: 4, incChange: '-2 vs last week', incColor: 'var(--success)',
+        time: '38s', watchlist: 45,
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        traffic: [190, 210, 205, 230, 245, 80, 60]
+    },
+    '30D': {
+        vol: 6840, volChange: '-2% vs last month', volColor: 'var(--danger)',
+        inc: 12, incChange: '+3 vs last month', incColor: 'var(--danger)',
+        time: '45s', watchlist: 46,
+        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+        traffic: [1600, 1750, 1680, 1810]
+    },
+    'YTD': {
+        vol: 42500, volChange: '+15% vs prev 6 months', volColor: 'var(--success)',
+        inc: 54, incChange: '-10 vs prev 6 months', incColor: 'var(--success)',
+        time: '42s', watchlist: 52,
+        labels: ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'],
+        traffic: [6800, 7100, 6200, 7400, 7800, 7200]
+    },
+    '6M': {
+        vol: 22400, volChange: '+8% vs last YTD', volColor: 'var(--success)',
+        inc: 28, incChange: '-4 vs last YTD', incColor: 'var(--success)',
+        time: '40s', watchlist: 52,
+        labels: ['Jan', 'Feb', 'Mar'],
+        traffic: [7400, 7800, 7200]
+    }
+};
+
+// Top Tenants (Static for prototype, but looks dynamic)
+const topTenantsLabels = ['Wayne Enterprises', 'Stark Industries', 'Daily Bugle', 'Oscorp', 'Other'];
+const topTenantsData = [450, 320, 180, 150, 100];
+
+// ==========================================
+// HOS ANALYTICS: RENDERERS
+// ==========================================
+
+// This is the function called when you switch tabs
+function renderHOSAnalytics() {
+    // Default load is 30 Days
+    const defaultTab = document.querySelector('.time-filter:nth-child(3)');
+    updateAnalyticsTimeframe('30D', defaultTab);
+    renderAuditLog();
+}
+
+// Controller for the Date Range Picker
+function updateAnalyticsTimeframe(range, element) {
+    // 1. Update UI active states for the pill buttons
+    if (element) {
+        document.querySelectorAll('.time-filter').forEach(el => {
+            el.style.background = 'transparent';
+            el.style.color = 'var(--text-muted)';
+        });
+        element.style.background = 'var(--primary-action)';
+        element.style.color = 'white';
+    }
+
+    // 2. Fetch the mock data for that time range
+    const data = analyticsData[range];
+
+    // 3. Update KPI DOM Elements
+    document.getElementById('analytics-kpi-vol').textContent = data.vol.toLocaleString();
+    const volChange = document.getElementById('analytics-kpi-vol-change');
+    volChange.textContent = data.volChange;
+    volChange.style.color = data.volColor;
+
+    document.getElementById('analytics-kpi-incidents').textContent = data.inc;
+    const incChange = document.getElementById('analytics-kpi-incidents-change');
+    incChange.textContent = data.incChange;
+    incChange.style.color = data.incColor;
+
+    document.getElementById('analytics-kpi-time').textContent = data.time;
+    document.getElementById('analytics-kpi-watchlist').textContent = data.watchlist;
+
+    // 4. Render/Update Charts
+    renderTrafficChart(data.labels, data.traffic);
+    renderTenantPieChart();
+}
+
+// Draw Line Chart
+function renderTrafficChart(labels, dataPoints) {
+    const ctx = document.getElementById('trafficLineChart').getContext('2d');
+    
+    // Destroy previous instance to prevent canvas overlap glitches
+    if (trafficChartInstance) {
+        trafficChartInstance.destroy();
+    }
+
+    trafficChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Visitor Footfall',
+                data: dataPoints,
+                borderColor: '#EA580C', // Kinetic Orange
+                backgroundColor: 'rgba(234, 88, 12, 0.1)',
+                borderWidth: 3,
+                tension: 0.4, // Smooth curves
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+}
+
+// Draw Pie Chart
+function renderTenantPieChart() {
+    const ctx = document.getElementById('tenantPieChart').getContext('2d');
+    
+    // Only draw once since tenant data is static in this prototype
+    if (tenantChartInstance) return;
+
+    tenantChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: topTenantsLabels,
+            datasets: [{
+                data: topTenantsData,
+                backgroundColor: [
+                    '#3b82f6', // Bright Blue
+                    '#EA580C', // Kinetic Orange
+                    '#10B981', // Secure Green
+                    '#8B5CF6', // Royal Purple
+                    '#64748B'  // Slate (for "Other")
+                ],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%', // Makes it a sleek doughnut
+            plugins: {
+                legend: { position: 'right', labels: { boxWidth: 12, font: { family: "'Inter', sans-serif" } } }
+            }
+        }
+    });
+}
+
+// Render the Historical Audit Ledger with dynamic filtering
+function renderAuditLog(logType = 'VISITORS') {
+    const container = document.getElementById('audit-table-container');
+    if (!container) return;
+    
+    // Start building the table HTML
+    let html = `<table style="width: 100%; text-align: left; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">`;
+
+    if (logType === 'VISITORS') {
+        // --- VISITOR LOG COLUMNS ---
+        html += `<th style="padding: 12px 8px;">TIMESTAMP</th>
+                 <th style="padding: 12px 8px;">ENTITY NAME</th>
+                 <th style="padding: 12px 8px;">ROLE</th>
+                 <th style="padding: 12px 8px;">DESTINATION / ZONE</th>
+                 <th style="padding: 12px 8px;">STATUS</th></tr></thead><tbody style="font-size: 0.9rem;">`;
+                 
+        const visitors = getGuardVisitors().slice().reverse(); 
+        if (visitors.length === 0) {
+            html += `<tr><td colspan="5" style="text-align:center; padding: 20px; color: var(--text-muted);">No visitor records found.</td></tr>`;
+        } else {
+            visitors.forEach(v => {
+                const timeStr = v.timeIn || (v.visits && v.visits.length > 0 ? v.visits[v.visits.length - 1].time_in : 'Unknown');
+                const role = v.isVIP ? '<span style="color:#eab308">VIP</span>' : (v.isGhost ? 'Ghost Protocol' : 'Standard Visitor');
+                
+                let statusColor = "var(--text-main)";
+                let statusText = v.status || 'Processed';
+                if (v.isBlacklisted) {
+                    statusColor = "var(--danger)";
+                    statusText = "ACCESS DENIED";
+                } else if (v.status === 'SIGNED_OUT' || v.status === 'CHECKED OUT') {
+                    statusColor = "var(--text-muted)";
+                } else if (v.status === 'EXPECTED') {
+                    statusColor = "var(--primary-action)";
+                }
+
+                html += `<tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 12px 8px; color: var(--text-muted);">${timeStr}</td>
+                    <td style="padding: 12px 8px; font-weight: 600; color: var(--text-main);">${v.name || 'Unknown'}</td>
+                    <td style="padding: 12px 8px;">${role}</td>
+                    <td style="padding: 12px 8px;">${v.company || 'Lobby Checkpoint'}</td>
+                    <td style="padding: 12px 8px; font-weight: 700; color: ${statusColor};">${statusText}</td>
+                </tr>`;
+            });
+        }
+    } 
+    else if (logType === 'SYSTEM') {
+        // --- SYSTEM ACCESS LOG COLUMNS ---
+        html += `<th style="padding: 12px 8px;">TIMESTAMP</th>
+                 <th style="padding: 12px 8px;">OPERATOR / USER</th>
+                 <th style="padding: 12px 8px;">ACTION RECORDED</th>
+                 <th style="padding: 12px 8px;">TERMINAL / IP</th>
+                 <th style="padding: 12px 8px;">RESULT</th></tr></thead><tbody style="font-size: 0.9rem;">`;
+                 
+        // Mock System Data
+        const sysLogs = [
+            { time: "Just now", user: "HOS Admin (Current)", action: "Accessed Analytics Dashboard", term: "Web-Portal", status: "SUCCESS", color: "var(--success)" },
+            { time: "45 mins ago", user: "Guard 02", action: "System Login", term: "Lobby-Kiosk-A", status: "SUCCESS", color: "var(--success)" },
+            { time: "3 hrs ago", user: "Unknown", action: "Failed Authentication (Bad Pwd)", term: "IP: 192.168.1.104", status: "DENIED", color: "var(--danger)" },
+            { time: "1 day ago", user: "System Automaton", action: "Nightly Data Backup", term: "Server-Core", status: "SUCCESS", color: "var(--success)" }
+        ];
+        
+        sysLogs.forEach(log => {
+            html += `<tr style="border-bottom: 1px solid var(--border-color);">
+                <td style="padding: 12px 8px; color: var(--text-muted);">${log.time}</td>
+                <td style="padding: 12px 8px; font-weight: 600; color: var(--text-main);">${log.user}</td>
+                <td style="padding: 12px 8px; color: var(--text-main);">${log.action}</td>
+                <td style="padding: 12px 8px; color: var(--text-muted); font-family: monospace;">${log.term}</td>
+                <td style="padding: 12px 8px; font-weight: 700; color: ${log.color};">${log.status}</td>
+            </tr>`;
+        });
+    }
+    else if (logType === 'INCIDENTS') {
+        // --- SECURITY INCIDENT LOG COLUMNS ---
+        html += `<th style="padding: 12px 8px;">TIMESTAMP</th>
+                 <th style="padding: 12px 8px;">SEVERITY</th>
+                 <th style="padding: 12px 8px;">EVENT DETECTED</th>
+                 <th style="padding: 12px 8px;">RESOLUTION / STATUS</th></tr></thead><tbody style="font-size: 0.9rem;">`;
+                 
+        // Mock Incident Data (matches our Priority Queue logic)
+        const incLogs = [
+            { time: "1 min ago", sev: "CRITICAL", event: "Tenant Panic Alarm - Suite 402", res: "HOS Active Review", color: "var(--danger)" },
+            { time: "14 mins ago", sev: "WARNING", event: "Hardware Anomaly - Gate 3", res: "Maintenance Dispatched", color: "#eab308" },
+            { time: "2 hrs ago", sev: "HIGH", event: "ACL Match - Banned Entity Detected", res: "Intercepted by Guard 01", color: "var(--primary-action)" },
+            { time: "1 day ago", sev: "LOW", event: "Ghost Protocol Arrival (VIP)", res: "Escort Completed", color: "#3b82f6" }
+        ];
+        
+        incLogs.forEach(log => {
+            html += `<tr style="border-bottom: 1px solid var(--border-color);">
+                <td style="padding: 12px 8px; color: var(--text-muted);">${log.time}</td>
+                <td style="padding: 12px 8px; font-weight: 800; color: ${log.color};">${log.sev}</td>
+                <td style="padding: 12px 8px; font-weight: 600; color: var(--text-main);">${log.event}</td>
+                <td style="padding: 12px 8px; color: var(--text-muted);">${log.res}</td>
+            </tr>`;
+        });
+    }
+
+    html += `</tbody></table>`;
+    container.innerHTML = html;
 }
