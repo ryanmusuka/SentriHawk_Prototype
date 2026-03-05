@@ -898,203 +898,378 @@
                         </div>
                 </div>
             </div>
+
+            <div id="hos-surveillance" class="view-content view-hidden">
+                <div class="header-action-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                    <h2 style="color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 10px;">
+                        <span style="height: 12px; width: 12px; background-color: var(--danger); border-radius: 50%; display: inline-block; box-shadow: 0 0 8px var(--danger); animation: pulseAlert 2s infinite;"></span>
+                        Live AI Surveillance
+                    </h2>
+                    
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
+                            <span style="height: 8px; width: 8px; background-color: var(--success); border-radius: 50%; display: inline-block;"></span>
+                            8/8 Feeds Online • 12ms Latency
+                        </div>
+                        <select style="background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 6px; font-size: 0.85rem;">
+                            <option>All Zones</option>
+                            <option>Perimeter</option>
+                            <option>Main Lobby</option>
+                            <option>Executive Floors</option>
+                        </select>
+                        <div style="display: flex; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden;">
+                            <button style="padding: 6px 10px; border: none; background: var(--primary-action); color: white; cursor: pointer;">▦</button>
+                            <button style="padding: 6px 10px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; border-left: 1px solid var(--border-color);">▤</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 2.5fr 1fr; gap: 20px; align-items: start;">
+                    
+                    <div id="surveillance-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        </div>
+
+                    <div class="card" style="display: flex; flex-direction: column; height: 600px;">
+                        <h3 style="color: var(--text-main); margin-top: 0; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                            AI Telemetry
+                            <span style="font-size: 0.7rem; background: var(--hover-bg); padding: 3px 8px; border-radius: 12px; color: var(--primary-action);">LIVE</span>
+                        </h3>
+                        <div id="ai-telemetry-feed" style="flex: 1; overflow-y: auto; padding-right: 5px; display: flex; flex-direction: column; gap: 10px; font-family: monospace; font-size: 0.8rem;">
+                            </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="hos-watchlist" class="view-content view-hidden">
+                <div class="header-action-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h2 style="color: var(--text-main); margin: 0;">Threat Intelligence & Watchlist</h2>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 5px;">Manage building access restrictions and review tenant flags.</p>
+                    </div>
+                    <button class="btn-primary" onclick="openManualWatchlistModal()">+ Add Manual Entry</button>
+                 </div>
+
+                <h3 style="color: var(--danger); margin-top: 0; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                    <span style="background: rgba(239, 68, 68, 0.1); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">ACTION REQUIRED</span>
+                    Pending Threat Reviews
+                </h3>
+                
+                <div id="watchlist-pending-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-bottom: 40px;">
+                    </div>
+
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 15px;">
+                        <h3 style="color: var(--text-main); margin: 0;">Active Access Control List (ACL)</h3>
+                        <input type="text" id="watchlist-search" placeholder="Search entity name..." onkeyup="filterWatchlistTable()" style="background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; width: 250px;">
+                    </div>
+                    
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; text-align: left; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-muted); font-size: 0.85rem;">
+                                    <th style="padding: 12px 8px;">ENTITY NAME</th>
+                                    <th style="padding: 12px 8px;">THREAT LEVEL</th>
+                                    <th style="padding: 12px 8px;">REASON / NOTES</th>
+                                    <th style="padding: 12px 8px;">EXPIRY DATE</th>
+                                    <th style="padding: 12px 8px;">ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="watchlist-active-table" style="font-size: 0.9rem;">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
         </main>
     </section>
 
 
 
 
-    <div id="visitor-profile-modal" class="modal hidden">
-        <div class="modal-content card">
-            <span class="close" onclick="closeVisitorProfile()">&times;</span>
-            <h2 style="color: var(--primary-bg); border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">Identity Profile</h2>
-            
-            <div class="profile-details" style="margin: 1.5rem 0; line-height: 2;">
-                <p><span class="stat-label">FULL NAME:</span> <strong id="vp-name" style="font-size: 1.1rem;"></strong></p>
-                <p><span class="stat-label">ID NUMBER:</span> <span id="vp-id"></span></p>
-                <p><span class="stat-label">CONTACT:</span> <span id="vp-phone"></span></p>
-                <p><span class="stat-label">ORGANIZATION:</span> <span id="vp-company"></span></p>
-                <p><span class="stat-label">CURRENT STATUS:</span> <span id="vp-status" class="status-tag"></span></p>
-            </div>
-            
-            <button id="btn-mark-arrived" class="btn-primary" style="width: 100%; display: none;" onclick="markVisitorArrived()">REGISTER ARRIVAL (ON SITE)</button>
-            <button id="btn-sign-out" class="btn-primary" style="width: 100%; display: none; background: var(--text-muted);" onclick="signVisitorOut()">SIGN OUT VISITOR</button>        
-        </div>
-    </div>
-
-    <div id="ghost-modal" class="modal hidden overlay-dark">
-    <div class="modal-content card modal-dialog-md relative-container">
-        <span class="close modal-close-abs" onclick="closeGhostModal()">&times;</span>
-        <h2 class="modal-title">Ghost protocol</h2>
-        <p class="modal-subtitle">Generate an untraceable VIP access token.</p>
-        
-        <div class="input-group mt-4">
-            <label>Internal reference name</label>
-            <input type="text" id="ghost-name" class="modal-input">
-        </div>
-        
-        <button class="btn-primary btn-full-width mt-4" onclick="generateGhostQR()">Generate token</button>
-        <div id="qrcode" class="qr-container mt-4"></div>
-    </div>
-</div>
-
-    <div id="tenant-directory-modal" class="modal hidden backdrop-blur">
-        <div class="modal-content tenant-modal card">
-            <span class="close" onclick="closeTenantGrid()">&times;</span>
-            <h2 style="color: var(--primary-bg); border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px;">Select Destination</h2>
-            <div id="tenant-grid" class="tenant-grid">
+            <div id="visitor-profile-modal" class="modal hidden">
+                <div class="modal-content card">
+                    <span class="close" onclick="closeVisitorProfile()">&times;</span>
+                    <h2 style="color: var(--primary-bg); border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">Identity Profile</h2>
+                    
+                    <div class="profile-details" style="margin: 1.5rem 0; line-height: 2;">
+                        <p><span class="stat-label">FULL NAME:</span> <strong id="vp-name" style="font-size: 1.1rem;"></strong></p>
+                        <p><span class="stat-label">ID NUMBER:</span> <span id="vp-id"></span></p>
+                        <p><span class="stat-label">CONTACT:</span> <span id="vp-phone"></span></p>
+                        <p><span class="stat-label">ORGANIZATION:</span> <span id="vp-company"></span></p>
+                        <p><span class="stat-label">CURRENT STATUS:</span> <span id="vp-status" class="status-tag"></span></p>
+                    </div>
+                    
+                    <button id="btn-mark-arrived" class="btn-primary" style="width: 100%; display: none;" onclick="markVisitorArrived()">REGISTER ARRIVAL (ON SITE)</button>
+                    <button id="btn-sign-out" class="btn-primary" style="width: 100%; display: none; background: var(--text-muted);" onclick="signVisitorOut()">SIGN OUT VISITOR</button>        
                 </div>
-        </div>
-    </div>
-
-<div id="modal-log-package" class="modal hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000;">
-    <div class="card" style="width: 600px; padding: 32px; background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
-        <h2 style="margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; font-size: 1.4rem; color: #1e293b;">Log New Package</h2>
-        
-        <div style="margin-top: 24px;">
-            <label style="display: block; font-weight: 700; font-size: 0.8rem; color: #334155; text-transform: uppercase; margin-bottom: 8px;">Courier / Sender Name <span style="color: #ea580c;">*</span></label>
-            <input type="text" id="pkg-courier" style="width: 100%; padding: 14px; border: 2px solid #1e293b; border-radius: 4px; font-size: 1rem; box-sizing: border-box; outline: none;">
-        </div>
-
-        <div style="margin-top: 24px;">
-            <label style="display: block; font-weight: 700; font-size: 0.8rem; color: #334155; text-transform: uppercase; margin-bottom: 8px;">Package Details <span style="color: #ea580c;">*</span></label>
-            <input type="text" id="pkg-details" placeholder="e.g., 2 Boxes, 1 Envelope" style="width: 100%; padding: 14px; border: 2px solid #1e293b; border-radius: 4px; font-size: 1rem; box-sizing: border-box; outline: none;">
-        </div>
-
-        <div style="margin-top: 24px;">
-            <label style="display: block; font-weight: 700; font-size: 0.8rem; color: #334155; text-transform: uppercase; margin-bottom: 8px;">Destination <span style="color: #ea580c;">*</span></label>
-            <div onclick="openTenantGridFor('package')" style="width: 100%; padding: 16px; border: 2px dashed #cbd5e1; border-radius: 4px; text-align: center; color: #334155; font-weight: 700; cursor: pointer; box-sizing: border-box; transition: 0.2s;">
-                <span id="pkg-destination-display">+ Select Destination Tenant</span>
             </div>
-            <input type="hidden" id="pkg-destination-value">
-        </div>
 
-        <div style="display: flex; gap: 16px; margin-top: 32px;">
-            <button style="flex: 1; padding: 14px; background: #0f172a; color: white; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 0.9rem;" onclick="closeModal('modal-log-package')">&larr; Back to Deliveries</button>
-            <button style="flex: 1; padding: 14px; background: #ea580c; color: white; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 0.9rem;" onclick="submitNewPackage()">Verify & Log</button>
-        </div>
-    </div>
-</div>
-
-<div id="modal-package-details" class="modal hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000;">
-    <div class="card" style="width: 450px; padding: 32px; background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative;">
-        <button onclick="closeModal('modal-package-details')" style="position: absolute; top: 24px; right: 24px; background: none; border: none; font-size: 1.5rem; font-weight: bold; color: #1e293b; cursor: pointer;">&times;</button>
-        
-        <h2 style="margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; font-size: 1.4rem; color: #1e293b;">Package Profile</h2>
-        
-        <div style="display: flex; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid #e2e8f0;">
-            <span style="font-weight: 700; font-size: 0.85rem; color: #64748b; text-transform: uppercase;">COURIER:</span>
-            <span id="detail-courier" style="font-weight: 700; color: #1e293b;"></span>
-        </div>
-        <div style="display: flex; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid #e2e8f0;">
-            <span style="font-weight: 700; font-size: 0.85rem; color: #64748b; text-transform: uppercase;">DETAILS:</span>
-            <span id="detail-info" style="color: #1e293b;"></span>
-        </div>
-        <div style="display: flex; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid #e2e8f0;">
-            <span style="font-weight: 700; font-size: 0.85rem; color: #64748b; text-transform: uppercase;">DESTINATION:</span>
-            <span id="detail-destination" style="color: #1e293b;"></span>
-        </div>
-        <div style="display: flex; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid #e2e8f0;">
-            <span style="font-weight: 700; font-size: 0.85rem; color: #64748b; text-transform: uppercase;">RECEIVED:</span>
-            <span id="detail-time" style="color: #1e293b; font-weight: 600;"></span>
-        </div>
-
-        <div style="display: flex; gap: 16px; margin-top: 32px;">
-            <button style="flex: 1; padding: 14px; background: #0f172a; color: white; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 0.9rem;" onclick="notifyRecipient()">Notify Recipient</button>
-            <button id="detail-btn-collect" style="flex: 1; padding: 14px; background: #ea580c; color: white; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 0.9rem;">Mark Collected</button>
-        </div>
-    </div>
-</div>
-
-<div id="modal-mark-collected" class="modal hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000;">
-    <div class="card" style="width: 600px; padding: 32px; background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
-        <h2 style="margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; font-size: 1.4rem; color: #1e293b;">Confirm Handover</h2>
-        <p id="collect-pkg-name" style="color: #64748b; margin-top: -8px; margin-bottom: 24px; font-weight: 600;"></p>
-        
-        <input type="hidden" id="collect-pkg-id">
-
-        <div style="margin-top: 16px;">
-            <label style="display: block; font-weight: 700; font-size: 0.8rem; color: #334155; text-transform: uppercase; margin-bottom: 8px;">Employee Name <span style="color: #ea580c;">*</span></label>
-            <input type="text" id="collect-employee-name" style="width: 100%; padding: 14px; border: 2px solid #1e293b; border-radius: 4px; font-size: 1rem; box-sizing: border-box; outline: none;">
-        </div>
-
-        <div style="margin-top: 24px;">
-            <label style="display: block; font-weight: 700; font-size: 0.8rem; color: #334155; text-transform: uppercase; margin-bottom: 8px;">Company <span style="color: #ea580c;">*</span></label>
-            <div onclick="openTenantGridFor('collection')" style="width: 100%; padding: 16px; border: 2px dashed #cbd5e1; border-radius: 4px; text-align: center; color: #334155; font-weight: 700; cursor: pointer; box-sizing: border-box;">
-                <span id="collect-tenant-display">+ Select Company</span>
+            <div id="ghost-modal" class="modal hidden overlay-dark">
+            <div class="modal-content card modal-dialog-md relative-container">
+                <span class="close modal-close-abs" onclick="closeGhostModal()">&times;</span>
+                <h2 class="modal-title">Ghost protocol</h2>
+                <p class="modal-subtitle">Generate an untraceable VIP access token.</p>
+                
+                <div class="input-group mt-4">
+                    <label>Internal reference name</label>
+                    <input type="text" id="ghost-name" class="modal-input">
+                </div>
+                
+                <button class="btn-primary btn-full-width mt-4" onclick="generateGhostQR()">Generate token</button>
+                <div id="qrcode" class="qr-container mt-4"></div>
             </div>
-            <input type="hidden" id="collect-tenant-value">
-        </div>
+            </div>
 
-        <div style="display: flex; gap: 16px; margin-top: 32px;">
-            <button style="flex: 1; padding: 14px; background: #0f172a; color: white; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 0.9rem;" onclick="closeModal('modal-mark-collected')">&larr; Cancel</button>
-            <button style="flex: 1; padding: 14px; background: #ea580c; color: white; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 0.9rem;" onclick="submitCollectedPackage()">Confirm Handover</button>
-        </div>
-    </div>
-</div>
+            <div id="tenant-directory-modal" class="modal hidden backdrop-blur">
+                <div class="modal-content tenant-modal card">
+                    <span class="close" onclick="closeTenantGrid()">&times;</span>
+                    <h2 style="color: var(--primary-bg); border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px;">Select Destination</h2>
+                    <div id="tenant-grid" class="tenant-grid">
+                        </div>
+                </div>
+            </div>
 
-<div id="modal-emergency" class="modal hidden">
-    <div class="modal-content card">
-        <span class="close" onclick="closeEmergencyModal()">&times;</span>
-        <h2 style="color: var(--primary-bg); border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">Emergency Broadcast</h2>
-        
-        <div style="margin: 1.5rem 0;">
-            <p style="font-size: 0.8rem; font-weight: 700; color: var(--primary-bg); margin-bottom: 8px; text-transform: uppercase;">
-                Select Emergency Type <span style="color: var(--accent-color);">*</span>
-            </p>
+            <div id="modal-log-package" class="modal hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000;">
+                <div class="card" style="width: 600px; padding: 32px; background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+                    <h2 style="margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; font-size: 1.4rem; color: #1e293b;">Log New Package</h2>
+                    
+                    <div style="margin-top: 24px;">
+                        <label style="display: block; font-weight: 700; font-size: 0.8rem; color: #334155; text-transform: uppercase; margin-bottom: 8px;">Courier / Sender Name <span style="color: #ea580c;">*</span></label>
+                        <input type="text" id="pkg-courier" style="width: 100%; padding: 14px; border: 2px solid #1e293b; border-radius: 4px; font-size: 1rem; box-sizing: border-box; outline: none;">
+                    </div>
+
+                    <div style="margin-top: 24px;">
+                        <label style="display: block; font-weight: 700; font-size: 0.8rem; color: #334155; text-transform: uppercase; margin-bottom: 8px;">Package Details <span style="color: #ea580c;">*</span></label>
+                        <input type="text" id="pkg-details" placeholder="e.g., 2 Boxes, 1 Envelope" style="width: 100%; padding: 14px; border: 2px solid #1e293b; border-radius: 4px; font-size: 1rem; box-sizing: border-box; outline: none;">
+                    </div>
+
+                    <div style="margin-top: 24px;">
+                        <label style="display: block; font-weight: 700; font-size: 0.8rem; color: #334155; text-transform: uppercase; margin-bottom: 8px;">Destination <span style="color: #ea580c;">*</span></label>
+                        <div onclick="openTenantGridFor('package')" style="width: 100%; padding: 16px; border: 2px dashed #cbd5e1; border-radius: 4px; text-align: center; color: #334155; font-weight: 700; cursor: pointer; box-sizing: border-box; transition: 0.2s;">
+                            <span id="pkg-destination-display">+ Select Destination Tenant</span>
+                        </div>
+                        <input type="hidden" id="pkg-destination-value">
+                    </div>
+
+                    <div style="display: flex; gap: 16px; margin-top: 32px;">
+                        <button style="flex: 1; padding: 14px; background: #0f172a; color: white; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 0.9rem;" onclick="closeModal('modal-log-package')">&larr; Back to Deliveries</button>
+                        <button style="flex: 1; padding: 14px; background: #ea580c; color: white; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 0.9rem;" onclick="submitNewPackage()">Verify & Log</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="modal-package-details" class="modal hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000;">
+                <div class="card" style="width: 450px; padding: 32px; background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative;">
+                    <button onclick="closeModal('modal-package-details')" style="position: absolute; top: 24px; right: 24px; background: none; border: none; font-size: 1.5rem; font-weight: bold; color: #1e293b; cursor: pointer;">&times;</button>
+                    
+                    <h2 style="margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; font-size: 1.4rem; color: #1e293b;">Package Profile</h2>
+                    
+                    <div style="display: flex; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid #e2e8f0;">
+                        <span style="font-weight: 700; font-size: 0.85rem; color: #64748b; text-transform: uppercase;">COURIER:</span>
+                        <span id="detail-courier" style="font-weight: 700; color: #1e293b;"></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid #e2e8f0;">
+                        <span style="font-weight: 700; font-size: 0.85rem; color: #64748b; text-transform: uppercase;">DETAILS:</span>
+                        <span id="detail-info" style="color: #1e293b;"></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid #e2e8f0;">
+                        <span style="font-weight: 700; font-size: 0.85rem; color: #64748b; text-transform: uppercase;">DESTINATION:</span>
+                        <span id="detail-destination" style="color: #1e293b;"></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid #e2e8f0;">
+                        <span style="font-weight: 700; font-size: 0.85rem; color: #64748b; text-transform: uppercase;">RECEIVED:</span>
+                        <span id="detail-time" style="color: #1e293b; font-weight: 600;"></span>
+                    </div>
+
+                    <div style="display: flex; gap: 16px; margin-top: 32px;">
+                        <button style="flex: 1; padding: 14px; background: #0f172a; color: white; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 0.9rem;" onclick="notifyRecipient()">Notify Recipient</button>
+                        <button id="detail-btn-collect" style="flex: 1; padding: 14px; background: #ea580c; color: white; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 0.9rem;">Mark Collected</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="modal-mark-collected" class="modal hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000;">
+                <div class="card" style="width: 600px; padding: 32px; background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+                    <h2 style="margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; font-size: 1.4rem; color: #1e293b;">Confirm Handover</h2>
+                    <p id="collect-pkg-name" style="color: #64748b; margin-top: -8px; margin-bottom: 24px; font-weight: 600;"></p>
+                    
+                    <input type="hidden" id="collect-pkg-id">
+
+                    <div style="margin-top: 16px;">
+                        <label style="display: block; font-weight: 700; font-size: 0.8rem; color: #334155; text-transform: uppercase; margin-bottom: 8px;">Employee Name <span style="color: #ea580c;">*</span></label>
+                        <input type="text" id="collect-employee-name" style="width: 100%; padding: 14px; border: 2px solid #1e293b; border-radius: 4px; font-size: 1rem; box-sizing: border-box; outline: none;">
+                    </div>
+
+                    <div style="margin-top: 24px;">
+                        <label style="display: block; font-weight: 700; font-size: 0.8rem; color: #334155; text-transform: uppercase; margin-bottom: 8px;">Company <span style="color: #ea580c;">*</span></label>
+                        <div onclick="openTenantGridFor('collection')" style="width: 100%; padding: 16px; border: 2px dashed #cbd5e1; border-radius: 4px; text-align: center; color: #334155; font-weight: 700; cursor: pointer; box-sizing: border-box;">
+                            <span id="collect-tenant-display">+ Select Company</span>
+                        </div>
+                        <input type="hidden" id="collect-tenant-value">
+                    </div>
+
+                    <div style="display: flex; gap: 16px; margin-top: 32px;">
+                        <button style="flex: 1; padding: 14px; background: #0f172a; color: white; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 0.9rem;" onclick="closeModal('modal-mark-collected')">&larr; Cancel</button>
+                        <button style="flex: 1; padding: 14px; background: #ea580c; color: white; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 0.9rem;" onclick="submitCollectedPackage()">Confirm Handover</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="modal-emergency" class="modal hidden">
+                <div class="modal-content card">
+                    <span class="close" onclick="closeEmergencyModal()">&times;</span>
+                    <h2 style="color: var(--primary-bg); border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">Emergency Broadcast</h2>
+                    
+                    <div style="margin: 1.5rem 0;">
+                        <p style="font-size: 0.8rem; font-weight: 700; color: var(--primary-bg); margin-bottom: 8px; text-transform: uppercase;">
+                            Select Emergency Type <span style="color: var(--accent-color);">*</span>
+                        </p>
+                        
+                        <select id="emergency-type-select" style="width: 100%; padding: 12px; border: 2px solid var(--primary-bg); border-radius: 4px; font-size: 1rem; background: #fff; outline: none; margin-bottom: 20px;">
+                            <option value="" disabled selected>-- Select reason --</option>
+                            <option value="Fire Alarm">Fire Alarm / Evacuate Building</option>
+                            <option value="Medical Emergency">Medical Emergency</option>
+                            <option value="Security Threat">Security Threat / Lockdown</option>
+                            <option value="Severe Weather">Severe Weather Warning</option>
+                            <option value="Power Outage">Power Outage</option>
+                        </select>
+                    </div>
+                    
+                    <button class="btn-primary" style="width: 100%;" onclick="sendEmergencyBroadcast()">SEND BROADCAST ALERT</button>
+                </div>
+            </div>
+
+            <div id="t-modal-emergency" class="modal hidden">
+                <div class="modal-content card" style="border-top: 5px solid var(--danger);">
+                    <span class="close" onclick="closeTenantEmergencyModal()">&times;</span>
+                    <h2 style="color: var(--danger); border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">Report Emergency to Guard</h2>
+                    
+                    <div style="margin: 1.5rem 0;">
+                        <p style="font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; text-transform: uppercase;">
+                            Select Emergency Type <span style="color: var(--danger);">*</span>
+                        </p>
+                        
+                        <select id="t-emergency-type-select" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 4px; font-size: 1rem; background: var(--input-bg); color: var(--text-main); outline: none; margin-bottom: 20px;">
+                            <option value="" disabled selected>-- Select reason --</option>
+                            <option value="Medical Emergency">Medical Emergency</option>
+                            <option value="Security Threat">Security Threat / Intruder</option>
+                            <option value="Fire / Smoke">Fire / Smoke Detected</option>
+                            <option value="Severe Hazard">Severe Water Leak / Hazard</option>
+                        </select>
+                    </div>
+                    
+                    <button class="btn-primary" style="width: 100%; background-color: var(--danger); border: none;" onclick="sendTenantEmergency()">ALERT SECURITY FRONT DESK</button>
+                </div>
+            </div>
+
+            <div id="guard-incoming-emergency" class="modal hidden" style="z-index: 9999; background-color: rgba(239, 68, 68, 0.85);">
+                <div class="modal-content card" style="text-align: center; border: 5px solid var(--danger); max-width: 500px;">
+                    <div style="font-size: 5rem; margin-bottom: 10px; animation: pulseAlert 1s infinite;">🚨</div>
+                    <h1 style="color: var(--danger); font-size: 2rem; margin-bottom: 10px; text-transform: uppercase;">Incoming Emergency Alert</h1>
+                    
+                    <div style="background-color: var(--hover-bg); padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                        <h2 id="incoming-emergency-tenant" style="color: var(--text-main); margin: 0 0 10px 0;">Tenant Name</h2>
+                        <h3 id="incoming-emergency-type" style="color: var(--danger); margin: 0; font-weight: 800; font-size: 1.5rem;">TYPE</h3>
+                    </div>
+                    
+                    <button class="btn-primary" style="width: 100%; font-size: 1.2rem; padding: 15px; background-color: var(--text-main); border: none;" onclick="acknowledgeEmergency()">ACKNOWLEDGE & RESPOND</button>
+                </div>
+            </div>
+
+            <div id="modal-expanded-cam" class="modal hidden" style="z-index: 9999; background-color: rgba(2, 6, 23, 0.95); display: flex; align-items: center; justify-content: center;">
+                            <div style="width: 80%; height: 80%; background: #000; border: 2px solid var(--border-color); border-radius: 8px; position: relative; display: flex; align-items: center; justify-content: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+                                <span class="cam-scanner" style="animation-duration: 2s;"></span>
+                                <button onclick="document.getElementById('modal-expanded-cam').classList.add('hidden')" style="position: absolute; top: 15px; right: 15px; background: transparent; border: 1px solid var(--border-color); color: white; padding: 5px 15px; border-radius: 4px; cursor: pointer; z-index: 10;">CLOSE</button>
+                                <div id="expanded-cam-label" class="cam-label" style="font-size: 1rem; padding: 5px 12px;">CAM-00: ENLARGED VIEW</div>
+                                <p style="color: #334155; font-size: 2rem; font-weight: 800; letter-spacing: 5px;">NO SIGNAL DETECTED</p>
+                            </div>
+            </div>
+
+            <div id="modal-manual-watchlist" class="modal hidden" style="z-index: 9999;">
+                <div class="modal-content card form-card-large" style="max-width: 600px; width: 90%;">
+                    <h3 style="color: var(--text-main); border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-top: 0; margin-bottom: 20px;">Manual Threat Entry</h3>
+                    
+                    <form onsubmit="submitManualWatchlist(event)">
+                        <div class="input-group">
+                            <label>Full name<span style="color: var(--danger);"> *</span></label>
+                            <input type="text" id="mw-name" required>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>ID number (if known)</label>
+                            <input type="text" id="mw-id">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>Reason for Restriction<span style="color: var(--danger);"> *</span></label>
+                            <input type="text" id="mw-reason" placeholder="e.g., Hostile termination, known shoplifter..." required>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>Assign Threat Level<span style="color: var(--danger);"> *</span></label>
+                            <select id="mw-level" style="width: 100%; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border); padding: 10px; border-radius: 6px;" required>
+                                <option value="CRITICAL">🔴 CRITICAL: Call Police / Deny Entry</option>
+                                <option value="WARNING">🟠 WARNING: Deny Entry at Gate</option>
+                                <option value="MONITOR">🟡 MONITOR: Allow Entry, Escort Required</option>
+                            </select>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>Expiry Date</label>
+                            <select id="mw-expiry" style="width: 100%; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border); padding: 10px; border-radius: 6px;">
+                                <option value="Permanent">Permanent</option>
+                                <option value="6 Months">6 Months</option>
+                                <option value="1 Year">1 Year</option>
+                            </select>
+                        </div>
+                        
+                        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                            <button type="button" class="btn-primary" style="flex: 1; background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted);" onclick="closeManualWatchlistModal()">CANCEL</button>
+                            <button type="submit" class="btn-primary" style="flex: 1; background: var(--danger); border: none;">AUTHORIZE WATCHLIST</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
             
-            <select id="emergency-type-select" style="width: 100%; padding: 12px; border: 2px solid var(--primary-bg); border-radius: 4px; font-size: 1rem; background: #fff; outline: none; margin-bottom: 20px;">
-                <option value="" disabled selected>-- Select reason --</option>
-                <option value="Fire Alarm">Fire Alarm / Evacuate Building</option>
-                <option value="Medical Emergency">Medical Emergency</option>
-                <option value="Security Threat">Security Threat / Lockdown</option>
-                <option value="Severe Weather">Severe Weather Warning</option>
-                <option value="Power Outage">Power Outage</option>
-            </select>
-        </div>
-        
-        <button class="btn-primary" style="width: 100%;" onclick="sendEmergencyBroadcast()">SEND BROADCAST ALERT</button>
-    </div>
-</div>
+            <div id="modal-approve-threat" class="modal hidden" style="z-index: 9999;">
+                <div class="modal-content card" style="max-width: 500px; padding: 30px;">
+                    <h2 style="color: var(--text-main); margin-top: 0; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Review & Classify Threat</h2>
+                    
+                    <div style="background: var(--hover-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
+                        <div style="width: 50px; height: 50px; background: #334155; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">👤</div>
+                        <div>
+                            <h3 id="modal-threat-name" style="margin: 0; color: var(--text-main);">Entity Name</h3>
+                            <p id="modal-threat-tenant" style="margin: 2px 0 0 0; color: var(--text-muted); font-size: 0.8rem;">Flagged by: Tenant</p>
+                        </div>
+                    </div>
 
-<div id="t-modal-emergency" class="modal hidden">
-    <div class="modal-content card" style="border-top: 5px solid var(--danger);">
-        <span class="close" onclick="closeTenantEmergencyModal()">&times;</span>
-        <h2 style="color: var(--danger); border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">Report Emergency to Guard</h2>
-        
-        <div style="margin: 1.5rem 0;">
-            <p style="font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; text-transform: uppercase;">
-                Select Emergency Type <span style="color: var(--danger);">*</span>
-            </p>
-            
-            <select id="t-emergency-type-select" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 4px; font-size: 1rem; background: var(--input-bg); color: var(--text-main); outline: none; margin-bottom: 20px;">
-                <option value="" disabled selected>-- Select reason --</option>
-                <option value="Medical Emergency">Medical Emergency</option>
-                <option value="Security Threat">Security Threat / Intruder</option>
-                <option value="Fire / Smoke">Fire / Smoke Detected</option>
-                <option value="Severe Hazard">Severe Water Leak / Hazard</option>
-            </select>
-        </div>
-        
-        <button class="btn-primary" style="width: 100%; background-color: var(--danger); border: none;" onclick="sendTenantEmergency()">ALERT SECURITY FRONT DESK</button>
-    </div>
-</div>
+                    <div style="margin-bottom: 25px; padding-left: 10px; border-left: 2px solid var(--border-color);">
+                        <div style="position: relative; padding-left: 15px; margin-bottom: 15px;">
+                            <span style="position: absolute; left: -21px; top: 0; height: 10px; width: 10px; background: var(--text-muted); border-radius: 50%; border: 4px solid var(--bg-card);"></span>
+                            <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Today, 09:15 AM</p>
+                            <p style="margin: 2px 0 0 0; font-size: 0.9rem; color: var(--text-main);">Flagged by <b id="modal-timeline-tenant">Tenant</b></p>
+                        </div>
+                        <div style="position: relative; padding-left: 15px;">
+                            <span style="position: absolute; left: -21px; top: 0; height: 10px; width: 10px; background: var(--primary-action); border-radius: 50%; border: 4px solid var(--bg-card); box-shadow: 0 0 8px var(--primary-action);"></span>
+                            <p style="margin: 0; font-size: 0.8rem; color: var(--primary-action); font-weight: 600;">PENDING HOS APPROVAL</p>
+                            <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">Awaiting classification and AI Database Sync...</p>
+                        </div>
+                    </div>
 
-<div id="guard-incoming-emergency" class="modal hidden" style="z-index: 9999; background-color: rgba(239, 68, 68, 0.85);">
-    <div class="modal-content card" style="text-align: center; border: 5px solid var(--danger); max-width: 500px;">
-        <div style="font-size: 5rem; margin-bottom: 10px; animation: pulseAlert 1s infinite;">🚨</div>
-        <h1 style="color: var(--danger); font-size: 2rem; margin-bottom: 10px; text-transform: uppercase;">Incoming Emergency Alert</h1>
-        
-        <div style="background-color: var(--hover-bg); padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-            <h2 id="incoming-emergency-tenant" style="color: var(--text-main); margin: 0 0 10px 0;">Tenant Name</h2>
-            <h3 id="incoming-emergency-type" style="color: var(--danger); margin: 0; font-weight: 800; font-size: 1.5rem;">TYPE</h3>
-        </div>
-        
-        <button class="btn-primary" style="width: 100%; font-size: 1.2rem; padding: 15px; background-color: var(--text-main); border: none;" onclick="acknowledgeEmergency()">ACKNOWLEDGE & RESPOND</button>
-    </div>
-</div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">ASSIGN THREAT LEVEL</label>
+                    <select id="modal-threat-level" style="width: 100%; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 10px; border-radius: 6px; margin-bottom: 20px;">
+                        <option value="CRITICAL">🔴 CRITICAL: Call Police if spotted / Deny Entry</option>
+                        <option value="WARNING">🟠 WARNING: Deny Entry at Gate</option>
+                        <option value="MONITOR">🟡 MONITOR: Allow Entry, Escort Required</option>
+                    </select>
 
-
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn-primary" style="flex: 1; background: var(--danger); border: none;" onclick="confirmAddWatchlist()">AUTHORIZE & SYNC TO CAMERAS</button>
+                        <button class="btn-primary" style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted);" onclick="closeApproveModal()">CANCEL</button>
+                    </div>
+                </div>
+            </div>
     <script src="app.js"></script>
 </body>
 </html>

@@ -370,7 +370,6 @@ body.dark-mode .cal-nav-btn { background: #0f172a; border-color: #334155; color:
 body.dark-mode .cal-nav-btn:hover { background: #1e293b; }
 
 /* Grid Lines & Cells Dark */
-/* We lighten the grid lines to #334155 so they stand out against the dark day backgrounds */
 body.dark-mode .cal-grid { border-top-color: #334155; border-left-color: #334155; background: #334155 !important; }
 
 /* Main Day Blocks */
@@ -385,4 +384,68 @@ body.dark-mode .cal-day-number { color: #f8fafc; }
     0% { transform: scale(1); opacity: 1; }
     50% { transform: scale(1.1); opacity: 0.8; }
     100% { transform: scale(1); opacity: 1; }
+}
+
+/* ==========================================
+   LIVE SURVEILLANCE (TIER 3 AI)
+   ========================================== */
+.cam-feed {
+    background-color: #020617; /* Deepest dark for screens */
+    border: 2px dashed #334155;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cam-feed:hover {
+    border-color: var(--primary-action);
+}
+
+/* The Radar/Scanner Sweep Animation */
+@keyframes scanSweep {
+    0% { top: -10%; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
+}
+
+.cam-scanner {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: rgba(234, 88, 12, 0.8); /* Kinetic Orange */
+    box-shadow: 0 0 15px rgba(234, 88, 12, 0.8), 0 0 30px rgba(234, 88, 12, 0.4);
+    animation: scanSweep 3.5s linear infinite;
+    z-index: 2;
+}
+
+/* The Red Alert Flash Animation */
+@keyframes camAlert {
+    0%, 100% { border-color: var(--danger); box-shadow: inset 0 0 30px rgba(239, 68, 68, 0.2); }
+    50% { border-color: #334155; box-shadow: none; }
+}
+
+.cam-feed.alert-active {
+    animation: camAlert 1.5s infinite;
+    border-style: solid;
+}
+
+.cam-label {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    color: #94a3b8;
+    font-size: 0.75rem;
+    font-family: monospace;
+    background: rgba(2, 6, 23, 0.8);
+    padding: 3px 8px;
+    border-radius: 4px;
+    z-index: 3;
 }

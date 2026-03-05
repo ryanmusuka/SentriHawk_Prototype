@@ -1974,13 +1974,10 @@ function switchHOSView(viewId, navElement = null) {
             renderHOSAnalytics(); 
             break;
         case 'hos-surveillance':
-            // renderHOSSurveillance();
+            renderHOSSurveillance();
             break;
         case 'hos-watchlist':
-            // renderHOSWatchlist(); 
-            break;
-        case 'hos-history':
-            // renderHOSHistory(); 
+            renderHOSWatchlist(); 
             break;
     }
 }
@@ -2504,4 +2501,283 @@ function renderAuditLog(logType = 'VISITORS') {
 
     html += `</tbody></table>`;
     container.innerHTML = html;
+}
+
+// ==========================================
+// HOS SURVEILLANCE: MOCK AI ENGINE & STATE
+// ==========================================
+const CAMERAS = [
+    { id: 'CAM-01', name: 'Main Lobby North', scanner: true },
+    { id: 'CAM-02', name: 'Main Lobby South', scanner: false },
+    { id: 'CAM-03', name: 'Turnstile Bank A', scanner: true },
+    { id: 'CAM-04', name: 'Turnstile Bank B', scanner: false },
+    { id: 'CAM-05', name: 'Elevator Lobby', scanner: true },
+    { id: 'CAM-06', name: 'Loading Bay', scanner: false },
+    { id: 'CAM-07', name: 'Perimeter West', scanner: false },
+    { id: 'CAM-08', name: 'Garage Entry', scanner: false }
+];
+
+let telemetryInterval = null;
+
+function renderHOSSurveillance() {
+    const grid = document.getElementById('surveillance-grid');
+    if (!grid) return;
+    
+    // 1. Build the Camera Grid
+    grid.innerHTML = '';
+    CAMERAS.forEach(cam => {
+        // We randomly add an 'alert-active' class to CAM-03 to simulate a detection
+        const isAlert = cam.id === 'CAM-03' ? 'alert-active' : '';
+        const alertTag = isAlert ? `<div class="cam-tag" style="background: var(--danger); color: white;">FACIAL REC MATCH</div>` : '';
+        const scannerHtml = cam.scanner ? `<div class="cam-scanner"></div>` : '';
+        
+        const camHtml = `
+            <div class="cam-feed ${isAlert}" onclick="expandCamera('${cam.id}', '${cam.name}')">
+                ${scannerHtml}
+                ${alertTag}
+                <div class="cam-label">${cam.id}: ${cam.name}</div>
+                <span style="color: #334155; font-weight: 700; opacity: 0.5;">FEED OFFLINE</span>
+            </div>
+        `;
+        grid.innerHTML += camHtml;
+    });
+
+    // 2. Start the AI Telemetry Simulation Engine
+    startTelemetryEngine();
+}
+
+function expandCamera(id, name) {
+    const modal = document.getElementById('modal-expanded-cam');
+    const label = document.getElementById('expanded-cam-label');
+    
+    if (modal && label) {
+        label.textContent = `${id}: ${name} (ENLARGED HIGH-RES FEED)`;
+        modal.classList.remove('hidden');
+    }
+}
+
+function startTelemetryEngine() {
+    const feed = document.getElementById('ai-telemetry-feed');
+    if (!feed) return;
+    
+    // Clear previous intervals to prevent duplicates if user tabs back and forth
+    if (telemetryInterval) clearInterval(telemetryInterval);
+    
+    // Initial populate
+    feed.innerHTML = `
+        <div style="color: var(--text-muted);">[SYSTEM] Neural Engine Initialized...</div>
+        <div style="color: var(--text-muted);">[SYSTEM] Calibrating Bounding Boxes...</div>
+    `;
+
+    const mockEvents = [
+        { cam: 'CAM-01', msg: 'Identity Verified: Taylor Kane (Host)', color: 'var(--success)' },
+        { cam: 'CAM-03', msg: 'WARNING: Watchlist Match Detected (98%)', color: 'var(--danger)' },
+        { cam: 'CAM-05', msg: 'Multiple Entities Detected in Zone', color: 'var(--text-main)' },
+        { cam: 'CAM-08', msg: 'License Plate Scanned: XYZ-123', color: 'var(--primary-action)' },
+        { cam: 'CAM-02', msg: 'Ghost Protocol: VIP Approaching Turnstile', color: '#3b82f6' }
+    ];
+
+    // Push a new log every 4 seconds to make the UI feel alive
+    telemetryInterval = setInterval(() => {
+        const randomEvent = mockEvents[Math.floor(Math.random() * mockEvents.length)];
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second:'2-digit' });
+        
+        const logEntry = document.createElement('div');
+        logEntry.style.cssText = `border-left: 2px solid ${randomEvent.color}; padding-left: 8px; animation: slideIn 0.3s ease;`;
+        logEntry.innerHTML = `
+            <span style="color: var(--text-muted);">${timeStr} - ${randomEvent.cam}</span><br>
+            <span style="color: ${randomEvent.color};">${randomEvent.msg}</span>
+        `;
+        
+        feed.appendChild(logEntry);
+        
+        // Auto-scroll to bottom
+        feed.scrollTop = feed.scrollHeight;
+    }, 4000);
+}
+
+renderHOSSurveillance() 
+// (Update the switch case in your routeUser / switchHOSView function!)
+
+// ==========================================
+// HOS WATCHLIST & THREAT INTELLIGENCE STATE
+// ==========================================
+
+// Mock State for the prototype
+let pendingThreats = [
+    { id: 'pt1', name: 'Marcus Vance', flaggedBy: 'Wayne Enterprises (Suite 401)', reason: 'Aggressive behavior towards reception staff.', time: 'Today, 09:12 AM' },
+    { id: 'pt2', name: 'Unknown Courier', flaggedBy: 'Stark Industries', reason: 'Attempted to tailgate into secure lab area.', time: 'Yesterday, 16:45 PM' }
+];
+
+let activeWatchlist = [
+    { id: 'aw1', name: 'Benjamin Wright', level: 'CRITICAL', reason: 'Former Employee - Hostile Termination', expiry: 'Permanent' },
+    { id: 'aw2', name: 'Sarah Jenkins', level: 'WARNING', reason: 'Stalking/Harassment of Employee', expiry: 'Oct 12, 2026' },
+    { id: 'aw3', name: 'John Doe (Alias)', level: 'MONITOR', reason: 'Known corporate espionage suspect', expiry: 'Dec 01, 2026' }
+];
+
+let currentApprovingThreatId = null;
+
+function renderHOSWatchlist() {
+    // 1. Render Pending Grid
+    const pendingGrid = document.getElementById('watchlist-pending-grid');
+    if (pendingGrid) {
+        pendingGrid.innerHTML = '';
+        if (pendingThreats.length === 0) {
+            pendingGrid.innerHTML = `<p style="color: var(--text-muted);">No pending reviews. The queue is clear.</p>`;
+        } else {
+            pendingThreats.forEach(t => {
+                pendingGrid.innerHTML += `
+                    <div class="card" style="border: 1px solid var(--danger); position: relative; overflow: hidden;">
+                        <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--danger);"></div>
+                        <h3 style="margin: 0 0 5px 0; color: var(--text-main);">${t.name}</h3>
+                        <p style="margin: 0 0 10px 0; font-size: 0.8rem; color: var(--text-muted);">Flagged by: <b>${t.flaggedBy}</b></p>
+                        <div style="background: var(--hover-bg); padding: 10px; border-radius: 6px; font-size: 0.85rem; color: var(--text-main); margin-bottom: 15px;">
+                            " ${t.reason} "
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn-primary" style="flex: 1; padding: 6px; font-size: 0.8rem; background: var(--danger); border: none;" onclick="openApproveModal('${t.id}')">REVIEW</button>
+                            <button class="btn-primary" style="flex: 1; padding: 6px; font-size: 0.8rem; background: transparent; color: var(--text-main); border: 1px solid var(--border-color);" onclick="rejectThreat('${t.id}')">DISMISS</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+    }
+
+    // 2. Render Active Table
+    renderWatchlistTable();
+}
+
+function renderWatchlistTable(filterText = '') {
+    const tbody = document.getElementById('watchlist-active-table');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    const filteredList = activeWatchlist.filter(w => w.name.toLowerCase().includes(filterText.toLowerCase()));
+
+    if (filteredList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 20px; color: var(--text-muted);">No restricted entities found.</td></tr>`;
+        return;
+    }
+
+    filteredList.forEach(w => {
+        let levelBadge = '';
+        if (w.level === 'CRITICAL') levelBadge = `<span style="background: rgba(239, 68, 68, 0.1); color: var(--danger); padding: 4px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">🔴 CRITICAL</span>`;
+        if (w.level === 'WARNING') levelBadge = `<span style="background: rgba(234, 88, 12, 0.1); color: #eab308; padding: 4px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">🟠 WARNING</span>`;
+        if (w.level === 'MONITOR') levelBadge = `<span style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; padding: 4px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">🟡 MONITOR</span>`;
+
+        tbody.innerHTML += `
+            <tr style="border-bottom: 1px solid var(--border-color);">
+                <td style="padding: 12px 8px; font-weight: 600; color: var(--text-main);">${w.name}</td>
+                <td style="padding: 12px 8px;">${levelBadge}</td>
+                <td style="padding: 12px 8px; color: var(--text-muted); font-size: 0.85rem;">${w.reason}</td>
+                <td style="padding: 12px 8px; color: var(--text-muted); font-size: 0.85rem;">${w.expiry}</td>
+                <td style="padding: 12px 8px;">
+                    <button style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; text-decoration: underline; font-size: 0.8rem;" onclick="removeWatchlist('${w.id}')">Revoke</button>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+// === INTERACTIVE CONTROLLERS ===
+
+function filterWatchlistTable() {
+    const query = document.getElementById('watchlist-search').value;
+    renderWatchlistTable(query);
+}
+
+function openApproveModal(id) {
+    currentApprovingThreatId = id;
+    const threat = pendingThreats.find(t => t.id === id);
+    
+    document.getElementById('modal-threat-name').textContent = threat.name;
+    document.getElementById('modal-threat-tenant').textContent = `Flagged by: ${threat.flaggedBy}`;
+    document.getElementById('modal-timeline-tenant').textContent = threat.flaggedBy;
+    
+    document.getElementById('modal-approve-threat').classList.remove('hidden');
+}
+
+function closeApproveModal() {
+    document.getElementById('modal-approve-threat').classList.add('hidden');
+    currentApprovingThreatId = null;
+}
+
+function confirmAddWatchlist() {
+    if (!currentApprovingThreatId) return;
+    
+    const threatIndex = pendingThreats.findIndex(t => t.id === currentApprovingThreatId);
+    const threat = pendingThreats[threatIndex];
+    const level = document.getElementById('modal-threat-level').value;
+
+    // Move to Active array
+    activeWatchlist.push({
+        id: 'aw_' + Date.now(),
+        name: threat.name,
+        level: level,
+        reason: threat.reason,
+        expiry: 'Permanent (Manual Review Required)'
+    });
+
+    // Remove from Pending array
+    pendingThreats.splice(threatIndex, 1);
+    
+    closeApproveModal();
+    renderHOSWatchlist(); // Re-render to show updated arrays
+    
+    alert(`SUCCESS: ${threat.name} classified as ${level}. AI Camera Models are updating...`);
+}
+
+function rejectThreat(id) {
+    pendingThreats = pendingThreats.filter(t => t.id !== id);
+    renderHOSWatchlist();
+}
+
+function removeWatchlist(id) {
+    if(confirm("Are you sure you want to revoke this ban and allow this entity back into the building?")) {
+        activeWatchlist = activeWatchlist.filter(w => w.id !== id);
+        renderHOSWatchlist();
+    }
+}
+
+// === MANUAL WATCHLIST ENTRY CONTROLLERS ===
+
+function openManualWatchlistModal() {
+    document.getElementById('modal-manual-watchlist').classList.remove('hidden');
+}
+
+function closeManualWatchlistModal() {
+    document.getElementById('modal-manual-watchlist').classList.add('hidden');
+    document.getElementById('mw-name').value = '';
+    document.getElementById('mw-id').value = '';
+    document.getElementById('mw-reason').value = '';
+    document.getElementById('mw-level').value = 'CRITICAL';
+    document.getElementById('mw-expiry').value = 'Permanent';
+}
+
+function submitManualWatchlist(e) {
+    e.preventDefault(); // Stop page from refreshing
+    
+    // 1. Harvest data from the DOM
+    const name = document.getElementById('mw-name').value;
+    const reason = document.getElementById('mw-reason').value;
+    const level = document.getElementById('mw-level').value;
+    const expiry = document.getElementById('mw-expiry').value;
+    
+    // 2. Manipulate State: Push to the Active Watchlist array
+    activeWatchlist.push({
+        id: 'aw_' + Date.now(),
+        name: name,
+        level: level,
+        reason: reason + ' (Manual Entry by HOS)',
+        expiry: expiry
+    });
+    
+    // 3. UI Cleanup & Re-render
+    closeManualWatchlistModal();
+    renderHOSWatchlist(); 
+    
+    // 4. User Feedback
+    alert(`SUCCESS: ${name} added to Watchlist as ${level}. Core databases updated.`);
 }
