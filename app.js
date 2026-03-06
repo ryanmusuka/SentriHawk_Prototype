@@ -178,6 +178,18 @@ function routeUser() {
     }
 }
 
+// Close any open modal if the user clicks the dark background overlay
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.classList.add('hidden');
+        
+        // Safety cleanup if they close the manual watchlist modal this way
+        if (event.target.id === 'modal-manual-watchlist') {
+            closeManualWatchlistModal(); 
+        }
+    }
+}
+
 // Guard Sub-navigation
 function switchGuardView(viewId, navElement = null) {
     // 1. Move the Orange Active Accent
@@ -1947,7 +1959,7 @@ function switchHOSView(viewId, navElement = null) {
     // 2. State Cleanup: Hide all possible HOS-specific views
     const allHOSViews = [
         'hos-dashboard', 'hos-analytics', 'hos-surveillance', 
-        'hos-watchlist', 'hos-history', 'settings-view'
+        'hos-watchlist', 'hos-audit', 'settings-view'
     ];
     
     allHOSViews.forEach(id => {
@@ -1979,6 +1991,7 @@ function switchHOSView(viewId, navElement = null) {
         case 'hos-watchlist':
             renderHOSWatchlist(); 
             break;
+        case 'hos-audit': renderUnifiedAudit(); break;
     }
 }
 
@@ -2503,6 +2516,74 @@ function renderAuditLog(logType = 'VISITORS') {
     container.innerHTML = html;
 }
 
+// Function to initialize the new bottom-row charts
+function initBottomAnalyticsCharts() {
+    // 1. Peak Times Bar Chart (Vertical)
+    const ctxPeak = document.getElementById('peakTimesChart');
+    if (ctxPeak) {
+        new Chart(ctxPeak, {
+            type: 'bar',
+            data: {
+                labels: ['06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
+                datasets: [{
+                    label: 'Visitor Volume',
+                    data: [12, 85, 45, 90, 55, 70, 25, 8],
+                    backgroundColor: 'rgba(59, 130, 246, 0.8)', // Blue
+                    borderRadius: 4,
+                    barPercentage: 0.6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(100, 116, 139, 0.1)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // 2. Incident Breakdown Chart (Horizontal)
+    const ctxIncident = document.getElementById('incidentBreakdownChart');
+    if (ctxIncident) {
+        new Chart(ctxIncident, {
+            type: 'bar',
+            data: {
+                labels: ['Tailgating', 'Banned Entity Match', 'Hardware Failure', 'Manual Override', 'Panic Alarm'],
+                datasets: [{
+                    label: 'Occurrences',
+                    data: [24, 8, 15, 42, 2],
+                    backgroundColor: [
+                        '#eab308', // Yellow (Tailgating)
+                        '#ef4444', // Red (Banned)
+                        '#f97316', // Orange (Hardware)
+                        '#3b82f6', // Blue (Override)
+                        '#991b1b'  // Dark Red (Panic)
+                    ],
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { beginAtZero: true, grid: { color: 'rgba(100, 116, 139, 0.1)' } },
+                    y: { grid: { display: false } }
+                }
+            }
+        });
+    }
+}
+ initBottomAnalyticsCharts() 
+
 // ==========================================
 // HOS SURVEILLANCE: MOCK AI ENGINE & STATE
 // ==========================================
@@ -2780,4 +2861,91 @@ function submitManualWatchlist(e) {
     
     // 4. User Feedback
     alert(`SUCCESS: ${name} added to Watchlist as ${level}. Core databases updated.`);
+}
+
+// ==========================================
+// HOS AUDIT TRAIL LOGIC
+// ==========================================
+
+function renderUnifiedAudit() {
+    const tbody = document.getElementById('audit-unified-table');
+    if (!tbody) return;
+
+    const searchTerm = (document.getElementById('audit-search')?.value || '').toLowerCase();
+    const categoryFilter = document.getElementById('audit-category')?.value || 'ALL';
+
+    tbody.innerHTML = '';
+    let combinedLogs = [];
+
+    // 1. Gather Visitor Access Logs
+    if (categoryFilter === 'ALL' || categoryFilter === 'ACCESS') {
+        const visitors = getGuardVisitors();
+        visitors.forEach(v => {
+            combinedLogs.push({
+                time: v.timeIn || 'Unknown Time',
+                type: 'ACCESS',
+                typeColor: 'var(--success)',
+                actor: v.name || 'Unknown',
+                details: `Processed entry for destination: ${v.company || 'Unknown'}`,
+                status: v.isBlacklisted ? 'DENIED' : 'GRANTED',
+                statusColor: v.isBlacklisted ? 'var(--danger)' : 'var(--text-main)',
+                sortTime: new Date().getTime() - Math.random() * 10000 // Mock sort time
+            });
+        });
+    }
+
+    // 2. Gather Security/Threat Logs
+    if (categoryFilter === 'ALL' || categoryFilter === 'SECURITY') {
+        combinedLogs.push({
+            time: '14 mins ago', type: 'SECURITY', typeColor: 'var(--danger)',
+            actor: 'System AI', details: 'Hardware Anomaly Detected - Gate 3 Motor Unresponsive', status: 'ALERT GENERATED', statusColor: '#eab308', sortTime: new Date().getTime()
+        });
+        combinedLogs.push({
+            time: '2 hrs ago', type: 'SECURITY', typeColor: 'var(--danger)',
+            actor: 'HOS Admin', details: 'Added Entity "Benjamin Wright" to Watchlist (CRITICAL)', status: 'ENFORCED', statusColor: 'var(--success)', sortTime: new Date().getTime() - 7200000
+        });
+    }
+
+    // 3. Gather System Logs
+    if (categoryFilter === 'ALL' || categoryFilter === 'SYSTEM') {
+        combinedLogs.push({
+            time: '45 mins ago', type: 'SYSTEM', typeColor: '#3b82f6',
+            actor: 'Guard 02', details: 'Terminal Login - Lobby Kiosk A', status: 'SUCCESS', statusColor: 'var(--success)', sortTime: new Date().getTime() - 2700000
+        });
+        combinedLogs.push({
+            time: '3 hrs ago', type: 'SYSTEM', typeColor: '#3b82f6',
+            actor: 'IP: 192.168.1.104', details: 'Failed Authentication (Bad Password)', status: 'DENIED', statusColor: 'var(--danger)', sortTime: new Date().getTime() - 10800000
+        });
+    }
+
+    // Filter by search term
+    if (searchTerm) {
+        combinedLogs = combinedLogs.filter(log => 
+            log.actor.toLowerCase().includes(searchTerm) || 
+            log.details.toLowerCase().includes(searchTerm)
+        );
+    }
+
+    // Render Table
+    if (combinedLogs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 30px; color: var(--text-muted);">No audit records found matching criteria.</td></tr>`;
+        return;
+    }
+
+    combinedLogs.forEach(log => {
+        tbody.innerHTML += `
+            <tr style="border-bottom: 1px solid var(--border-color); transition: background 0.2s;" onmouseover="this.style.background='var(--hover-bg)'" onmouseout="this.style.background='transparent'">
+                <td style="padding: 15px; color: var(--text-muted);">${log.time}</td>
+                <td style="padding: 15px;">
+                    <span style="border: 1px solid ${log.typeColor}; color: ${log.typeColor}; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700;">${log.type}</span>
+                </td>
+                <td style="padding: 15px; font-weight: 600; color: var(--text-main);">${log.actor}</td>
+                <td style="padding: 15px; color: var(--text-muted);">${log.details}</td>
+                <td style="padding: 15px; font-weight: 700; color: ${log.statusColor};">${log.status}</td>
+                <td style="padding: 15px; text-align: center; opacity: 0.5;" title="Log Hash Verified">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                </td>
+            </tr>
+        `;
+    });
 }

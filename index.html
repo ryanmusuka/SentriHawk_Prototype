@@ -83,7 +83,7 @@
                 <a href="#" id="nav-hos-analytics" class="nav-item" onclick="switchHOSView('hos-analytics', this)">Analytics</a>
                 <a href="#" id="nav-hos-surveillance" class="nav-item" onclick="switchHOSView('hos-surveillance', this)">Live Surveillance</a>
                 <a href="#" class="nav-item" onclick="switchHOSView('hos-watchlist', this)">Watchlist</a>
-                <a href="#" class="nav-item" onclick="switchHOSView('hos-history', this)">Audit Trail</a>
+                <a href="#" class="nav-item" onclick="switchHOSView('hos-audit', this)">Audit Trail</a>
                 <a href="#" class="nav-item" onclick="switchHOSView('settings-view', this)">Settings</a>
                 <a href="#" class="nav-item" onclick="logout()">Sign out</a>
             </nav>
@@ -881,21 +881,26 @@
                     </div>
                 </div>
 
-                <div class="card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
-                        <h3 style="color: var(--text-main); margin: 0;">System Audit Ledger</h3>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <select id="audit-log-filter" onchange="renderAuditLog(this.value)" style="background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; font-family: var(--font-main);">
-                                <option value="VISITORS">Visitor History</option>
-                                <option value="SYSTEM">System Access & Logins</option>
-                                <option value="INCIDENTS">Security Incidents</option>
-                            </select>
-                            <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem; background: transparent; color: var(--text-main); border: 1px solid var(--border-color);">Export CSV</button>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px;">
+                            <h3 style="color: var(--text-main); margin: 0;">Peak Access Times (Hourly Volume)</h3>
+                            <span style="font-size: 0.75rem; color: var(--text-muted); background: var(--hover-bg); padding: 4px 8px; border-radius: 4px;">Optimized for Guard Scheduling</span>
+                        </div>
+                        <div style="position: relative; height: 250px; width: 100%;">
+                            <canvas id="peakTimesChart"></canvas>
                         </div>
                     </div>
-                    
-                    <div style="overflow-x: auto;" id="audit-table-container">
+
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px;">
+                            <h3 style="color: var(--text-main); margin: 0;">Incident Classification</h3>
+                            <span style="font-size: 0.75rem; color: var(--danger); background: rgba(239, 68, 68, 0.1); padding: 4px 8px; border-radius: 4px; font-weight: 600;">Threat Vector Analysis</span>
                         </div>
+                        <div style="position: relative; height: 250px; width: 100%;">
+                            <canvas id="incidentBreakdownChart"></canvas>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -959,7 +964,7 @@
 
                 <div class="card">
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 15px;">
-                        <h3 style="color: var(--text-main); margin: 0;">Active Access Control List (ACL)</h3>
+                        <h3 style="color: var(--text-main); margin: 0;">Active Access Control List</h3>
                         <input type="text" id="watchlist-search" placeholder="Search entity name..." onkeyup="filterWatchlistTable()" style="background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; width: 250px;">
                     </div>
                     
@@ -981,6 +986,62 @@
                 </div>
             </div>
             
+            <div id="hos-audit" class="view-content view-hidden">
+                <div class="header-action-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h2 style="color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 10px;">System Audit Trail</h2>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn-primary" style="background: transparent; color: var(--text-main); border: 1px solid var(--border-color);">Export PDF</button>
+                        <button class="btn-primary" style="background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color);">Export CSV</button>
+                    </div>
+                </div>
+
+                <div class="card" style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; padding: 15px;">
+                    <div style="flex: 1; min-width: 250px;">
+                        <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 5px; display: block;">SEARCH EVENTS</label>
+                        <input type="text" id="audit-search" placeholder="Search by name, ID, or action..." onkeyup="renderUnifiedAudit()" style="width: 100%; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-size: 0.85rem;">
+                    </div>
+                    <div style="min-width: 150px;">
+                        <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 5px; display: block;">EVENT CATEGORY</label>
+                        <select id="audit-category" onchange="renderUnifiedAudit()" style="width: 100%; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-size: 0.85rem;">
+                            <option value="ALL">All Events</option>
+                            <option value="ACCESS">Access & Visitors</option>
+                            <option value="SECURITY">Security & Threats</option>
+                            <option value="SYSTEM">System & Operators</option>
+                        </select>
+                    </div>
+                    <div style="min-width: 150px;">
+                        <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 5px; display: block;">TIME RANGE</label>
+                        <select style="width: 100%; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-size: 0.85rem;">
+                            <option>Last 24 Hours</option>
+                            <option>Last 7 Days</option>
+                            <option>Last 30 Days</option>
+                            <option>Custom Range...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="card" style="padding: 0; overflow: hidden;">
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; text-align: left; border-collapse: collapse;">
+                            <thead style="background-color: var(--hover-bg);">
+                                <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    <th style="padding: 15px 15px;">TIMESTAMP</th>
+                                    <th style="padding: 15px 15px;">TYPE</th>
+                                    <th style="padding: 15px 15px;">ENTITY</th>
+                                    <th style="padding: 15px 15px;">EVENT DETAILS</th>
+                                    <th style="padding: 15px 15px;">STATUS</th>
+                                    <th style="padding: 15px 15px; text-align: center;">VERIFIED</th>
+                                </tr>
+                            </thead>
+                            <tbody id="audit-unified-table" style="font-size: 0.85rem;">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
         </main>
     </section>
 
