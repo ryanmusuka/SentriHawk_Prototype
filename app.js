@@ -2255,6 +2255,13 @@ function dismissHOSAlert(alertId) {
 // ==========================================
 let trafficChartInstance = null;
 let tenantChartInstance = null;
+let peakChartInstance = null;
+let incidentChartInstance = null;
+
+// The static labels for the charts
+const topTenantsLabels = ['Wayne Enterprises', 'Stark Industries', 'Daily Bugle', 'Oscorp', 'Other'];
+const peakTimeLabels = ['06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'];
+const incidentLabels = ['Tailgating', 'Banned Entity Match', 'Hardware Failure', 'Manual Override', 'Panic Alarm'];
 
 const analyticsData = {
     '24H': {
@@ -2262,57 +2269,65 @@ const analyticsData = {
         inc: 2, incChange: 'No change vs yesterday', incColor: 'var(--text-muted)',
         time: '32s', watchlist: 45,
         labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
-        traffic: [5, 12, 65, 42, 45, 15]
+        traffic: [5, 12, 65, 42, 45, 15],
+        tenantData: [65, 45, 30, 24, 20],
+        peakData: [2, 45, 25, 38, 20, 30, 15, 9],
+        incidentData: [1, 0, 0, 1, 0]
     },
     '7D': {
         vol: 1420, volChange: '+5% vs last week', volColor: 'var(--success)',
-        inc: 4, incChange: '-2 vs last week', incColor: 'var(--success)',
+        inc: 12, incChange: '-2 vs last week', incColor: 'var(--success)',
         time: '38s', watchlist: 45,
         labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-        traffic: [190, 210, 205, 230, 245, 80, 60]
+        traffic: [190, 210, 205, 230, 245, 80, 60],
+        tenantData: [520, 380, 210, 190, 120],
+        peakData: [15, 280, 150, 210, 140, 190, 65, 20],
+        incidentData: [5, 2, 1, 4, 0]
     },
     '30D': {
         vol: 6840, volChange: '-2% vs last month', volColor: 'var(--danger)',
-        inc: 12, incChange: '+3 vs last month', incColor: 'var(--danger)',
+        inc: 91, incChange: '+3 vs last month', incColor: 'var(--danger)',
         time: '45s', watchlist: 46,
         labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-        traffic: [1600, 1750, 1680, 1810]
-    },
-    'YTD': {
-        vol: 42500, volChange: '+15% vs prev 6 months', volColor: 'var(--success)',
-        inc: 54, incChange: '-10 vs prev 6 months', incColor: 'var(--success)',
-        time: '42s', watchlist: 52,
-        labels: ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'],
-        traffic: [6800, 7100, 6200, 7400, 7800, 7200]
+        traffic: [1600, 1750, 1680, 1810],
+        tenantData: [2100, 1800, 1200, 950, 790],
+        peakData: [45, 1150, 650, 890, 580, 720, 210, 85],
+        incidentData: [24, 8, 15, 42, 2]
     },
     '6M': {
-        vol: 22400, volChange: '+8% vs last YTD', volColor: 'var(--success)',
-        inc: 28, incChange: '-4 vs last YTD', incColor: 'var(--success)',
-        time: '40s', watchlist: 52,
+        vol: 22400, volChange: '+15% vs prev 6 months', volColor: 'var(--success)',
+        inc: 285, incChange: '-10 vs prev 6 months', incColor: 'var(--success)',
+        time: '42s', watchlist: 52,
+        labels: ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'],
+        traffic: [6800, 7100, 6200, 7400, 7800, 7200],
+        tenantData: [14500, 11200, 8100, 5200, 3500],
+        peakData: [150, 3800, 2100, 2900, 1850, 2400, 800, 280],
+        incidentData: [75, 28, 42, 110, 10]
+    },
+    'YTD': {
+        vol: 42345, volChange: '+8% vs last YTD', volColor: 'var(--success)',
+        inc: 465, incChange: '-4 vs last YTD', incColor: 'var(--success)',
+        time: '40s', watchlist: 57,
         labels: ['Jan', 'Feb', 'Mar'],
-        traffic: [7400, 7800, 7200]
+        traffic: [7400, 7800, 7200],
+        tenantData: [8200, 5800, 4100, 2500, 1800],
+        peakData: [280, 7500, 4200, 5800, 3900, 4800, 1400, 520],
+        incidentData: [140, 52, 85, 190, 18]
     }
 };
-
-// Top Tenants (Static for prototype, but looks dynamic)
-const topTenantsLabels = ['Wayne Enterprises', 'Stark Industries', 'Daily Bugle', 'Oscorp', 'Other'];
-const topTenantsData = [450, 320, 180, 150, 100];
 
 // ==========================================
 // HOS ANALYTICS: RENDERERS
 // ==========================================
 
-// This is the function called when you switch tabs
 function renderHOSAnalytics() {
     // Default load is 30 Days
     const defaultTab = document.querySelector('.time-filter:nth-child(3)');
     updateAnalyticsTimeframe('30D', defaultTab);
-    renderAuditLog();
 }
 
 // Controller for the Date Range Picker
 function updateAnalyticsTimeframe(range, element) {
-    // 1. Update UI active states for the pill buttons
     if (element) {
         document.querySelectorAll('.time-filter').forEach(el => {
             el.style.background = 'transparent';
@@ -2322,16 +2337,15 @@ function updateAnalyticsTimeframe(range, element) {
         element.style.color = 'white';
     }
 
-    // 2. Fetch the mock data for that time range
     const data = analyticsData[range];
 
-    // 3. Update KPI DOM Elements
+    // Update KPI DOM Elements
     document.getElementById('analytics-kpi-vol').textContent = data.vol.toLocaleString();
     const volChange = document.getElementById('analytics-kpi-vol-change');
     volChange.textContent = data.volChange;
     volChange.style.color = data.volColor;
 
-    document.getElementById('analytics-kpi-incidents').textContent = data.inc;
+    document.getElementById('analytics-kpi-incidents').textContent = data.inc.toLocaleString();
     const incChange = document.getElementById('analytics-kpi-incidents-change');
     incChange.textContent = data.incChange;
     incChange.style.color = data.incColor;
@@ -2339,19 +2353,16 @@ function updateAnalyticsTimeframe(range, element) {
     document.getElementById('analytics-kpi-time').textContent = data.time;
     document.getElementById('analytics-kpi-watchlist').textContent = data.watchlist;
 
-    // 4. Render/Update Charts
+    // Render ALL Charts with the selected timeframe's data
     renderTrafficChart(data.labels, data.traffic);
-    renderTenantPieChart();
+    renderTenantPieChart(data.tenantData);
+    renderBottomAnalyticsCharts(data.peakData, data.incidentData);
 }
 
-// Draw Line Chart
+// 1. Draw Line Chart (Traffic)
 function renderTrafficChart(labels, dataPoints) {
     const ctx = document.getElementById('trafficLineChart').getContext('2d');
-    
-    // Destroy previous instance to prevent canvas overlap glitches
-    if (trafficChartInstance) {
-        trafficChartInstance.destroy();
-    }
+    if (trafficChartInstance) trafficChartInstance.destroy();
 
     trafficChartInstance = new Chart(ctx, {
         type: 'line',
@@ -2360,229 +2371,95 @@ function renderTrafficChart(labels, dataPoints) {
             datasets: [{
                 label: 'Visitor Footfall',
                 data: dataPoints,
-                borderColor: '#EA580C', // Kinetic Orange
+                borderColor: '#EA580C', 
                 backgroundColor: 'rgba(234, 88, 12, 0.1)',
                 borderWidth: 3,
-                tension: 0.4, // Smooth curves
+                tension: 0.4,
                 fill: true
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
+            responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
-                x: { grid: { display: false } }
-            }
+            scales: { y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } }, x: { grid: { display: false } } }
         }
     });
 }
 
-// Draw Pie Chart
-function renderTenantPieChart() {
+// 2. Draw Pie Chart (Tenants)
+function renderTenantPieChart(dataPoints) {
     const ctx = document.getElementById('tenantPieChart').getContext('2d');
-    
-    // Only draw once since tenant data is static in this prototype
-    if (tenantChartInstance) return;
+    if (tenantChartInstance) tenantChartInstance.destroy();
 
     tenantChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: topTenantsLabels,
             datasets: [{
-                data: topTenantsData,
-                backgroundColor: [
-                    '#3b82f6', // Bright Blue
-                    '#EA580C', // Kinetic Orange
-                    '#10B981', // Secure Green
-                    '#8B5CF6', // Royal Purple
-                    '#64748B'  // Slate (for "Other")
-                ],
+                data: dataPoints,
+                backgroundColor: ['#3b82f6', '#EA580C', '#10B981', '#8B5CF6', '#64748B'],
                 borderWidth: 0,
                 hoverOffset: 4
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '65%', // Makes it a sleek doughnut
-            plugins: {
-                legend: { position: 'right', labels: { boxWidth: 12, font: { family: "'Inter', sans-serif" } } }
-            }
+            responsive: true, maintainAspectRatio: false, cutout: '65%',
+            plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { family: "'Inter', sans-serif" } } } }
         }
     });
 }
 
-// Render the Historical Audit Ledger with dynamic filtering
-function renderAuditLog(logType = 'VISITORS') {
-    const container = document.getElementById('audit-table-container');
-    if (!container) return;
-    
-    // Start building the table HTML
-    let html = `<table style="width: 100%; text-align: left; border-collapse: collapse;">
-                    <thead>
-                        <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">`;
-
-    if (logType === 'VISITORS') {
-        // --- VISITOR LOG COLUMNS ---
-        html += `<th style="padding: 12px 8px;">TIMESTAMP</th>
-                 <th style="padding: 12px 8px;">ENTITY NAME</th>
-                 <th style="padding: 12px 8px;">ROLE</th>
-                 <th style="padding: 12px 8px;">DESTINATION / ZONE</th>
-                 <th style="padding: 12px 8px;">STATUS</th></tr></thead><tbody style="font-size: 0.9rem;">`;
-                 
-        const visitors = getGuardVisitors().slice().reverse(); 
-        if (visitors.length === 0) {
-            html += `<tr><td colspan="5" style="text-align:center; padding: 20px; color: var(--text-muted);">No visitor records found.</td></tr>`;
-        } else {
-            visitors.forEach(v => {
-                const timeStr = v.timeIn || (v.visits && v.visits.length > 0 ? v.visits[v.visits.length - 1].time_in : 'Unknown');
-                const role = v.isVIP ? '<span style="color:#eab308">VIP</span>' : (v.isGhost ? 'Ghost Protocol' : 'Standard Visitor');
-                
-                let statusColor = "var(--text-main)";
-                let statusText = v.status || 'Processed';
-                if (v.isBlacklisted) {
-                    statusColor = "var(--danger)";
-                    statusText = "ACCESS DENIED";
-                } else if (v.status === 'SIGNED_OUT' || v.status === 'CHECKED OUT') {
-                    statusColor = "var(--text-muted)";
-                } else if (v.status === 'EXPECTED') {
-                    statusColor = "var(--primary-action)";
-                }
-
-                html += `<tr style="border-bottom: 1px solid var(--border-color);">
-                    <td style="padding: 12px 8px; color: var(--text-muted);">${timeStr}</td>
-                    <td style="padding: 12px 8px; font-weight: 600; color: var(--text-main);">${v.name || 'Unknown'}</td>
-                    <td style="padding: 12px 8px;">${role}</td>
-                    <td style="padding: 12px 8px;">${v.company || 'Lobby Checkpoint'}</td>
-                    <td style="padding: 12px 8px; font-weight: 700; color: ${statusColor};">${statusText}</td>
-                </tr>`;
-            });
-        }
-    } 
-    else if (logType === 'SYSTEM') {
-        // --- SYSTEM ACCESS LOG COLUMNS ---
-        html += `<th style="padding: 12px 8px;">TIMESTAMP</th>
-                 <th style="padding: 12px 8px;">OPERATOR / USER</th>
-                 <th style="padding: 12px 8px;">ACTION RECORDED</th>
-                 <th style="padding: 12px 8px;">TERMINAL / IP</th>
-                 <th style="padding: 12px 8px;">RESULT</th></tr></thead><tbody style="font-size: 0.9rem;">`;
-                 
-        // Mock System Data
-        const sysLogs = [
-            { time: "Just now", user: "HOS Admin (Current)", action: "Accessed Analytics Dashboard", term: "Web-Portal", status: "SUCCESS", color: "var(--success)" },
-            { time: "45 mins ago", user: "Guard 02", action: "System Login", term: "Lobby-Kiosk-A", status: "SUCCESS", color: "var(--success)" },
-            { time: "3 hrs ago", user: "Unknown", action: "Failed Authentication (Bad Pwd)", term: "IP: 192.168.1.104", status: "DENIED", color: "var(--danger)" },
-            { time: "1 day ago", user: "System Automaton", action: "Nightly Data Backup", term: "Server-Core", status: "SUCCESS", color: "var(--success)" }
-        ];
-        
-        sysLogs.forEach(log => {
-            html += `<tr style="border-bottom: 1px solid var(--border-color);">
-                <td style="padding: 12px 8px; color: var(--text-muted);">${log.time}</td>
-                <td style="padding: 12px 8px; font-weight: 600; color: var(--text-main);">${log.user}</td>
-                <td style="padding: 12px 8px; color: var(--text-main);">${log.action}</td>
-                <td style="padding: 12px 8px; color: var(--text-muted); font-family: monospace;">${log.term}</td>
-                <td style="padding: 12px 8px; font-weight: 700; color: ${log.color};">${log.status}</td>
-            </tr>`;
-        });
-    }
-    else if (logType === 'INCIDENTS') {
-        // --- SECURITY INCIDENT LOG COLUMNS ---
-        html += `<th style="padding: 12px 8px;">TIMESTAMP</th>
-                 <th style="padding: 12px 8px;">SEVERITY</th>
-                 <th style="padding: 12px 8px;">EVENT DETECTED</th>
-                 <th style="padding: 12px 8px;">RESOLUTION / STATUS</th></tr></thead><tbody style="font-size: 0.9rem;">`;
-                 
-        // Mock Incident Data (matches our Priority Queue logic)
-        const incLogs = [
-            { time: "1 min ago", sev: "CRITICAL", event: "Tenant Panic Alarm - Suite 402", res: "HOS Active Review", color: "var(--danger)" },
-            { time: "14 mins ago", sev: "WARNING", event: "Hardware Anomaly - Gate 3", res: "Maintenance Dispatched", color: "#eab308" },
-            { time: "2 hrs ago", sev: "HIGH", event: "ACL Match - Banned Entity Detected", res: "Intercepted by Guard 01", color: "var(--primary-action)" },
-            { time: "1 day ago", sev: "LOW", event: "Ghost Protocol Arrival (VIP)", res: "Escort Completed", color: "#3b82f6" }
-        ];
-        
-        incLogs.forEach(log => {
-            html += `<tr style="border-bottom: 1px solid var(--border-color);">
-                <td style="padding: 12px 8px; color: var(--text-muted);">${log.time}</td>
-                <td style="padding: 12px 8px; font-weight: 800; color: ${log.color};">${log.sev}</td>
-                <td style="padding: 12px 8px; font-weight: 600; color: var(--text-main);">${log.event}</td>
-                <td style="padding: 12px 8px; color: var(--text-muted);">${log.res}</td>
-            </tr>`;
-        });
-    }
-
-    html += `</tbody></table>`;
-    container.innerHTML = html;
-}
-
-// Function to initialize the new bottom-row charts
-function initBottomAnalyticsCharts() {
-    // 1. Peak Times Bar Chart (Vertical)
+// 3. Draw Bottom Row Bar Charts (Peak Traffic & Incidents)
+function renderBottomAnalyticsCharts(peakData, incidentData) {
+    // Peak Times Bar Chart (Vertical)
     const ctxPeak = document.getElementById('peakTimesChart');
     if (ctxPeak) {
-        new Chart(ctxPeak, {
+        if (peakChartInstance) peakChartInstance.destroy(); 
+        
+        peakChartInstance = new Chart(ctxPeak, {
             type: 'bar',
             data: {
-                labels: ['06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
+                labels: peakTimeLabels,
                 datasets: [{
-                    label: 'Visitor Volume',
-                    data: [12, 85, 45, 90, 55, 70, 25, 8],
-                    backgroundColor: 'rgba(59, 130, 246, 0.8)', // Blue
-                    borderRadius: 4,
-                    barPercentage: 0.6
+                    label: 'Average Visitor Volume',
+                    data: peakData,
+                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                    borderRadius: 4, barPercentage: 0.6
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: 'rgba(100, 116, 139, 0.1)' } },
-                    x: { grid: { display: false } }
-                }
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, grid: { color: 'rgba(100, 116, 139, 0.1)' } }, x: { grid: { display: false } } }
             }
         });
     }
 
-    // 2. Incident Breakdown Chart (Horizontal)
+    // Incident Breakdown Chart (Horizontal)
     const ctxIncident = document.getElementById('incidentBreakdownChart');
     if (ctxIncident) {
-        new Chart(ctxIncident, {
+        if (incidentChartInstance) incidentChartInstance.destroy(); 
+        
+        incidentChartInstance = new Chart(ctxIncident, {
             type: 'bar',
             data: {
-                labels: ['Tailgating', 'Banned Entity Match', 'Hardware Failure', 'Manual Override', 'Panic Alarm'],
+                labels: incidentLabels,
                 datasets: [{
                     label: 'Occurrences',
-                    data: [24, 8, 15, 42, 2],
-                    backgroundColor: [
-                        '#eab308', // Yellow (Tailgating)
-                        '#ef4444', // Red (Banned)
-                        '#f97316', // Orange (Hardware)
-                        '#3b82f6', // Blue (Override)
-                        '#991b1b'  // Dark Red (Panic)
-                    ],
+                    data: incidentData,
+                    backgroundColor: ['#eab308', '#ef4444', '#f97316', '#3b82f6', '#991b1b'],
                     borderRadius: 4
                 }]
             },
             options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    x: { beginAtZero: true, grid: { color: 'rgba(100, 116, 139, 0.1)' } },
-                    y: { grid: { display: false } }
-                }
+                indexAxis: 'y', // Flips it horizontal
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true, grid: { color: 'rgba(100, 116, 139, 0.1)' } }, y: { grid: { display: false } } }
             }
         });
     }
 }
- initBottomAnalyticsCharts() 
 
 // ==========================================
 // HOS SURVEILLANCE: MOCK AI ENGINE & STATE
