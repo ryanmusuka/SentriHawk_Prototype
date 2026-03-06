@@ -1046,8 +1046,6 @@
     </section>
 
 
-
-
             <div id="visitor-profile-modal" class="modal hidden">
                 <div class="modal-content card">
                     <span class="close" onclick="closeVisitorProfile()">&times;</span>
@@ -1072,13 +1070,8 @@
                 <h2 class="modal-title">Ghost protocol</h2>
                 <p class="modal-subtitle">Generate an untraceable VIP access token.</p>
                 
-                <div class="input-group mt-4">
-                    <label>Internal reference name</label>
-                    <input type="text" id="ghost-name" class="modal-input">
-                </div>
-                
-                <button class="btn-primary btn-full-width mt-4" onclick="generateGhostQR()">Generate token</button>
-                <div id="qrcode" class="qr-container mt-4"></div>
+                <button class="btn-primary btn-full-width mt-4" onclick="generateGhostQR()">Generate QR code</button>
+                <div style="padding-top: 5px;" id="qrcode" class="qr-container mt-4"></div>
             </div>
             </div>
 

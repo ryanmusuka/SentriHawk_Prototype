@@ -87,7 +87,6 @@ const tenants = [
 
 // --- 5. VISITORS (TEST CASES) ---
 const generateMockVector = () => Array.from({length: 10}, () => Math.random().toFixed(4));
-// --- 5. VISITORS (TEST CASES) ---
 const GUARD_STORAGE_KEY = 'sentrihawk_guard_visitors';
 const TENANT_STORAGE_KEY = 'sentrihawk_tenant_visitors';
 const todayStr = new Date().toISOString().split('T')[0];

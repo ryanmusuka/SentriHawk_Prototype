@@ -1,8 +1,6 @@
 // === GLOBAL STATE ===
 const state = { user: null, building: null };
-
 // === 1. AUTHENTICATION & SESSION MANAGEMENT ===
-
 // 1.1 Run this immediately when the script loads
 document.addEventListener("DOMContentLoaded", checkSession);
 
@@ -13,8 +11,6 @@ function checkSession() {
         const parsed = JSON.parse(savedSession);
         state.user = parsed.userData;
         state.building = parsed.buildingData;
-        
-        // Skip login screen
         transitionToApp();
     }
 }
@@ -23,15 +19,11 @@ function handleLogin(e) {
     e.preventDefault();
     const user = document.getElementById('username').value;
     const pass = document.getElementById('password').value;
-
-    // Security Note: In production (FastAPI), passwords MUST be hashed using bcrypt/Argon2.
-    // NEVER store or compare plaintext passwords in a real database.
     const result = authenticateUser(user, pass); 
 
     if (result.success) {
         state.user = result.userData;
         state.building = result.buildingData;
-        
         // Simulating JWT Storage: Save session so refresh doesn't log user out
         sessionStorage.setItem('sentrihawk_session', JSON.stringify({
             userData: state.user,
@@ -49,19 +41,17 @@ function transitionToApp() {
     document.getElementById('login-view').classList.remove('view-active');
     document.getElementById('login-view').classList.add('view-hidden');
     document.getElementById('app-view').classList.remove('view-hidden');
-    
     // Populate Sidebar Profile
     document.getElementById('display-name').textContent = state.user.name;
     document.getElementById('display-building').textContent = state.building.name;
     document.getElementById('role-badge').textContent = state.user.role;
 
-    routeUser(); // Proceed to load the correct dashboard
+    routeUser(); 
     initSettingsTab();
     loadSavedTheme()
 }
 
 function triggerLoginError() {
-    // Better UX than an alert()
     const btn = document.querySelector('#login-form .btn-primary');
     const originalText = btn.innerText;
     btn.style.backgroundColor = 'var(--danger)';
@@ -78,22 +68,13 @@ function logout() {
     location.reload(); 
 }
 
-
 // 2. ROUTING & NAVIGATION
 function routeUser() {
     const role = state.user.role;
     const tier = state.building?.tier || 1; 
-
-    // Hide BOTH navbars first
     const navGuard = document.getElementById('nav-guard');
     const navTenant = document.getElementById('nav-tenant');
     const navHOS = document.getElementById('nav-hos');
-
-    if (navGuard) navGuard.classList.add('hidden');
-    if (navTenant) navTenant.classList.add('hidden');
-    if (navHOS) navHOS.classList.add('hidden');
-
-    // Combine all possible view IDs across all roles
     const allAppViews = [
         // Guard Views
         'guard-dashboard', 'guard-registration', 'guard-history', 
@@ -142,7 +123,7 @@ function routeUser() {
 
         // --- TIER FEATURE LOCK (TENANT: PRE-REGISTRATION) ---
         const preRegNavBtn = document.getElementById('nav-tenant-prereg'); 
-        const preRegDashBtn = document.getElementById('btn-dashboard-prereg'); // Grab the dashboard button
+        const preRegDashBtn = document.getElementById('btn-dashboard-prereg'); 
         
         if (tier === 1) {
             if (preRegDashBtn) preRegDashBtn.classList.add('hidden'); // Hide the dashboard button
@@ -160,13 +141,11 @@ function routeUser() {
     } else if (role === 'hos') { 
         if (navHOS) navHOS.classList.remove('hidden');
 
-        // Feature Flag: Analytics (Requires Tier 2 or 3)
         const analyticsBtn = document.getElementById('nav-hos-analytics');
         if (analyticsBtn) {
             tier >= 2 ? analyticsBtn.classList.remove('tier-locked') : analyticsBtn.classList.add('tier-locked');
         }
 
-        // Feature Flag: Live Surveillance (Requires Tier 3)
         const surveillanceBtn = document.getElementById('nav-hos-surveillance');
         if (surveillanceBtn) {
             tier === 3 ? surveillanceBtn.classList.remove('tier-locked') : surveillanceBtn.classList.add('tier-locked');
@@ -208,7 +187,7 @@ function switchGuardView(viewId, navElement = null) {
         'guard-history', 'guard-deliveries', 
         'guard-communicate', 'settings-view'
     ];
-    
+
     allGuardViews.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -286,7 +265,7 @@ function populateGuardDashboard() {
     } else if (currentDashboardFilter === 'INCIDENTS') {
         displayVisitors = displayVisitors.filter(v => v.isBlacklisted);
     } else {
-        displayVisitors = displayVisitors.slice(0, 8); // ALL Activity: Just show last 8
+        displayVisitors = displayVisitors.slice(0, 7); // ALL Activity: Just show last 7
     }
 
    displayVisitors.forEach(v => {
@@ -302,21 +281,20 @@ function populateGuardDashboard() {
         // Guard specific: Hide the real name if they are a Ghost protocol VIP
         const displayName = v.isGhost ? "VIP GUEST" : v.name;
 
-        // 2. Evaluate Status Badges (Using the exact styling from the Tenant view)
+        // 2. Evaluate Status Badges with priority: Flagged > On Site > Expected > Unknown
         let statusBadge = `<span class="status-tag" style="background: #e2e8f0; color: #475569;">Unknown</span>`;
         if (currentStatus === 'EXPECTED') statusBadge = `<span class="status-tag" style="background: #fef08a; color: black;">Expected</span>`;
         if (currentStatus === 'ON SITE' || currentStatus === 'ON_SITE') statusBadge = `<span class="status-tag" style="background: #bbf7d0; color: #166534;">On Site</span>`;
         if (currentStatus === 'CHECKED OUT' || currentStatus === 'SIGNED_OUT') statusBadge = `<span class="status-tag" style="background: #e2e8f0; color: #475569;">Signed Out</span>`;
         if (currentStatus === 'FLAGGED' || currentStatus === 'RESTRICTED' || v.isBlacklisted) statusBadge = `<span class="status-tag text-danger" style="background: #fee2e2;">Restricted</span>`;
 
-        // 3. Create and inject the table row (Tenant method)
+        // 3. Create and inject the table row
         const tr = document.createElement('tr');
         
         // Keep the Guard's ability to click the row to see the profile
         tr.setAttribute('onclick', `openVisitorProfile('${v.id}')`);
         tr.style.cursor = 'pointer'; // Adds a pointer so guards know it's clickable
 
-        // Notice we kept the 5 columns so it aligns with the Guard's table headers
         tr.innerHTML = `
             <td style="font-weight: 500;">
                 ${displayName} 
@@ -601,10 +579,6 @@ function closeGhostModal() {
 }
 
 function generateGhostQR() {
-    const name = document.getElementById('ghost-name').value;
-    if(!name) return alert("Please enter a name.");
-
-    // 1. Generate Token
     const token = `SH_GHOST_${Date.now()}`;
     document.getElementById('qrcode').innerHTML = "";
     new QRCode(document.getElementById("qrcode"), { text: token, width: 160, height: 160 });
@@ -622,7 +596,7 @@ function generateGhostQR() {
     });
 
     // 3. Re-render Tenant Dash to show the new VIP
-    // populateTenantDashboard(); // Assuming you still have this function defined elsewhere or it's mocked
+    populateTenantDashboard(); 
     console.log("Ghost Pass Generated and Logged to Database.");
 }
 
@@ -657,7 +631,7 @@ function updateHistoryUI() {
 
 function renderHistoryTable() {
     const tbody = document.getElementById('history-table-body');
-    if (!tbody) return; // Fail gracefully if UI isn't loaded yet
+    if (!tbody) return; 
     tbody.innerHTML = '';
     
     const searchInput = document.getElementById('history-search');
@@ -673,13 +647,11 @@ function renderHistoryTable() {
         return matchSearch && hasVisitOnDate;
     });
     
-    // --- THE FIX: Update the UI counter ---
     const countHeader = document.getElementById('history-total-count');
     if (countHeader) {
         const plural = matches.length === 1 ? '' : 's';
         countHeader.innerText = `${matches.length} Visitor${plural}`;
     }
-    // --------------------------------------
 
     if (matches.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 40px;">No records found for this date.</td></tr>`;
@@ -773,7 +745,6 @@ function changeCalendarMonth(offset, e) {
 function renderCalendar() {
     const monthYear = document.getElementById('calendar-month-year');
     const grid = document.getElementById('calendar-days-grid');
-    
     // Update Header
     monthYear.innerText = currentCalDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     grid.innerHTML = '';
@@ -803,7 +774,7 @@ function renderCalendar() {
 function selectCustomDate(year, month, day, e) {
     if(e) e.stopPropagation();
     
-    // Set the main app date (Noon prevents weird timezone shifts pushing it a day back)
+    // Set the main app date
     historyDate = new Date(year, month, day, 12, 0, 0); 
     
     // Hide the dropdown calendar
@@ -835,7 +806,6 @@ function closeModal(modalId) {
 
 // 2. Open Specific Package Details Modal
 function openPackageDetails(pkgId) {
-    // Find the package in our array
     const pkg = activePackages.find(p => p.id === pkgId);
     if (!pkg) return;
     
@@ -985,7 +955,6 @@ function submitNewPackage() {
     renderDeliveries();
 }
 
-
 // 6. Mark Package as Collected
 function submitCollectedPackage() {
     const pkgId = document.getElementById('collect-pkg-id').value;
@@ -1005,7 +974,6 @@ function submitCollectedPackage() {
         
         const now = new Date();
         collectedPkg.collectedTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        // -----------------------------------------------
 
         collectedPackages.push(collectedPkg);
     }
@@ -1066,7 +1034,6 @@ function renderDeliveries() {
     }
 }
 
-// Run this once when the page loads
 renderDeliveries();
 
 // --- COMMUNICATE TAB LOGIC ---
@@ -1080,7 +1047,6 @@ const recentChats = [
 ];
 
 let activeChatId = null;
-
 function initCommunicateTab() {
     const premiumElements = document.querySelectorAll('.premium-feature');
     premiumElements.forEach(el => {
@@ -1192,8 +1158,6 @@ function sendChatMessage() {
     input.value = '';
     msgArea.scrollTop = msgArea.scrollHeight; 
 }
-
-// Run init
 initCommunicateTab();
 
 // --- EMERGENCY MODAL LOGIC ---
@@ -1222,7 +1186,6 @@ function sendEmergencyBroadcast() {
     closeEmergencyModal();
 }
 
-// Ensure the Emergency button has the trigger (add this to your init function)
 document.getElementById('btn-emergency-broadcast').onclick = openEmergencyModal;
 
 // --- SETTINGS / CONTROL CENTER LOGIC ---
@@ -1244,7 +1207,6 @@ function renderRoleSpecificSettings() {
     let htmlContent = '';
 
     // Automatically determine role based on login info!
-    // Using .toLowerCase() just in case your DB returns "Guard" instead of "guard"
     const userRole = state.user.role.toLowerCase(); 
 
     switch(userRole) {
@@ -1330,7 +1292,6 @@ function loadSavedTheme() {
     
     if (savedTheme === 'dark') {
         document.body.classList.add('dark-mode');
-        // Make sure the UI toggle switch matches the saved state!
         if (themeToggle) themeToggle.checked = true; 
     }
 }
@@ -1520,7 +1481,6 @@ function resetMainToToday() {
     renderMainCalendar();
 }
 
-// Passed the button element as 'btn' to avoid browser event bugs
 function setCalView(viewType, btn) {
     currentViewMode = viewType;
     
@@ -1576,7 +1536,6 @@ function renderMainCalendar() {
     }
 }
 
-// CALL IT IMMEDIATELY so it isn't a blank box on refresh
 renderMainCalendar();
 
 // === TENANT HISTORY STATE & ENGINE ===
@@ -1762,8 +1721,6 @@ function renderTenantDeliveries() {
     awaitingList.innerHTML = '';
     collectedList.innerHTML = '';
 
-    // Security Scope: Only fetch packages matching this tenant's ID/Name
-    // Make sure 'destination' from the guard dropdown matches how you store state.user.username
     const myTenantId = state.user.username; 
 
     // 1. Filter and Draw Awaiting Packages
@@ -1784,8 +1741,7 @@ function renderTenantDeliveries() {
     }
 
     // 2. Filter and Draw Collected History
-    // Check both destination and collectedTenant depending on how the Guard assigned it
-    const myCollectedPackages = collectedPackages.filter(pkg => 
+   const myCollectedPackages = collectedPackages.filter(pkg => 
         pkg.destination === myTenantId || pkg.collectedTenant === myTenantId
     );
 
@@ -1809,7 +1765,6 @@ function renderTenantDeliveries() {
         });
     }
 }
-
 
 // === TENANT COMMUNICATE LOGIC ===
 
@@ -1880,9 +1835,6 @@ function selectTenantChat(id, name, role) {
 
     const msgArea = document.getElementById('t-chat-messages-area');
     
-    // STRICT COPY of the Guard layout: 
-    // bubble-tenant = Incoming/Left Side (Guard speaking to Tenant)
-    // bubble-guard = Outgoing/Right Side (Tenant replying)
     msgArea.innerHTML = `
         <div class="bubble-tenant">
             Hello, please let us know if you need any assistance today.
@@ -1910,7 +1862,6 @@ function sendTenantChatMessage() {
 
     const msgArea = document.getElementById('t-chat-messages-area');
     
-    // STRICT COPY: Using bubble-guard so the sent message pops up on the RIGHT side
     msgArea.innerHTML += `<div class="bubble-guard">${msgText}</div>`;
 
     input.value = '';
@@ -1991,7 +1942,9 @@ function switchHOSView(viewId, navElement = null) {
         case 'hos-watchlist':
             renderHOSWatchlist(); 
             break;
-        case 'hos-audit': renderUnifiedAudit(); break;
+        case 'hos-audit': 
+            renderUnifiedAudit(); 
+            break;
     }
 }
 
@@ -2001,7 +1954,6 @@ let currentHOSFilter = 'ALL';
 function setHOSFilter(filter) {
     currentHOSFilter = filter;
     
-    // Optional: Update the Activity Feed Title dynamically
     const feedTitle = document.getElementById('hos-feed-title'); 
     if (feedTitle) {
         if (filter === 'EXPECTED') feedTitle.innerText = 'Expected Arrivals Feed';
@@ -2205,14 +2157,13 @@ function generatePriorityAlerts(tier) {
                 title: "💎 GHOST PROTOCOL ARRIVAL",
                 message: `VIP Guest requires immediate discrete escort to ${v.company || 'Host'}.`,
                 time: v.timeIn || "Just now",
-                color: "#3b82f6", // Blue
+                color: "#3b82f6", 
                 bg: "rgba(59, 130, 246, 0.05)"
             });
         }
     });
 
     // 2. HARDCODED ALERTS: Hardware Failures & Panic Alarms
-    // We only inject these to demonstrate system capabilities (especially for higher tiers)
     if (!dismissedHOSAlerts.has('panic_mock_1')) {
         alerts.push({
             id: 'panic_mock_1',
@@ -2237,7 +2188,7 @@ function generatePriorityAlerts(tier) {
         });
     }
 
-    // 3. THE SORTING ALGORITHM (O(N log N) Complexity)
+    // 3. THE SORTING ALGORITHM 
     // Sort ascending by severity (1 is first, 4 is last)
     alerts.sort((a, b) => a.severity - b.severity);
 
@@ -2472,7 +2423,7 @@ const CAMERAS = [
     { id: 'CAM-05', name: 'Elevator Lobby', scanner: true },
     { id: 'CAM-06', name: 'Loading Bay', scanner: false },
     { id: 'CAM-07', name: 'Perimeter West', scanner: false },
-    { id: 'CAM-08', name: 'Garage Entry', scanner: false }
+    { id: 'CAM-08', name: 'Garage Entry', scanner: true }
 ];
 
 let telemetryInterval = null;
@@ -2555,7 +2506,6 @@ function startTelemetryEngine() {
 }
 
 renderHOSSurveillance() 
-// (Update the switch case in your routeUser / switchHOSView function!)
 
 // ==========================================
 // HOS WATCHLIST & THREAT INTELLIGENCE STATE
@@ -2566,13 +2516,11 @@ let pendingThreats = [
     { id: 'pt1', name: 'Marcus Vance', flaggedBy: 'Wayne Enterprises (Suite 401)', reason: 'Aggressive behavior towards reception staff.', time: 'Today, 09:12 AM' },
     { id: 'pt2', name: 'Unknown Courier', flaggedBy: 'Stark Industries', reason: 'Attempted to tailgate into secure lab area.', time: 'Yesterday, 16:45 PM' }
 ];
-
 let activeWatchlist = [
     { id: 'aw1', name: 'Benjamin Wright', level: 'CRITICAL', reason: 'Former Employee - Hostile Termination', expiry: 'Permanent' },
     { id: 'aw2', name: 'Sarah Jenkins', level: 'WARNING', reason: 'Stalking/Harassment of Employee', expiry: 'Oct 12, 2026' },
     { id: 'aw3', name: 'John Doe (Alias)', level: 'MONITOR', reason: 'Known corporate espionage suspect', expiry: 'Dec 01, 2026' }
 ];
-
 let currentApprovingThreatId = null;
 
 function renderHOSWatchlist() {
