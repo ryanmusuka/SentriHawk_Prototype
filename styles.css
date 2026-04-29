@@ -39,7 +39,7 @@ body.dark-mode {
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 /* ========================================= */
-/* --- UNIFIED FOCUS STATES (THE FIX) --- */
+/* --- UNIFIED FOCUS STATES --- */
 /* ========================================= */
 input:focus, 
 select:focus, 
@@ -137,6 +137,63 @@ body {
 }
 .login-footer p { margin-bottom: 6px; }
 .login-footer p:first-child { color: var(--primary-action); font-weight: 700; }
+
+/* =========================================
+   PROTOTYPE CREDENTIALS TABLE 
+   ========================================= */
+.prototype-credentials-wrapper {
+    margin-top: 2rem; 
+    max-width: 600px; 
+    width: 100%; 
+    text-align: left;
+}
+
+.prototype-title {
+    color: #EA580C; 
+    font-size: 0.9rem; 
+    text-transform: uppercase; 
+    margin-bottom: 0.5rem;
+}
+
+.credentials-table {
+    width: 100%; 
+    border-collapse: collapse; 
+    font-size: 0.85rem; 
+    background: rgba(255, 255, 255, 0.03); 
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.credentials-table th {
+    background: rgba(0, 0, 0, 0.4); 
+    color: #F8FAFC;
+    padding: 10px; 
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-weight: 600;
+}
+
+.credentials-table td {
+    padding: 10px; 
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #E2E8F0; 
+}
+
+.credentials-table .tier-cell {
+    vertical-align: top; 
+    background: rgba(255, 255, 255, 0.02);
+    color: #F8FAFC;
+    font-weight: 600;
+}
+
+.credentials-table .operator-id {
+    color: #EA580C; 
+    font-family: monospace;
+    font-weight: bold;
+}
+
+.credentials-table .auth-key {
+    color: #94A3B8; 
+    font-family: monospace;
+}
 
 /* === APP LAYOUT === */
 .app-layout { display: flex; height: 100vh; }
